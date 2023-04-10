@@ -1,0 +1,18 @@
+[package]
+name = "tonlib-sys"
+version = "0.1.0"
+edition = "2021"
+description = "Rust bindings for tonlibjson library"
+license = "MIT"
+authors = ["STON.fi"]
+repository = "https://github.com/ston-fi/tonlib-sys"
+
+[features]
+default = []
+cmake-build = ["cmake", "num_cpus"]
+
+[dependencies]
+
+[build-dependencies]
+cmake = { version = "0.1", optional = true }
+num_cpus = { version = "1", optional = true }
