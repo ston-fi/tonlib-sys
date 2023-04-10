@@ -8,8 +8,8 @@ authors = ["STON.fi"]
 repository = "https://github.com/ston-fi/tonlib-sys"
 
 [features]
-default = []
-cmake-build = ["cmake", "num_cpus"]
+default = ["cmake", "num_cpus"]
+shared-tonlib = []
 
 [dependencies]
 

@@ -2,9 +2,9 @@ fn main() {
     build();
 }
 
-#[cfg(feature = "cmake-build")]
+#[cfg(not(feature = "shared-tonlib"))]
 fn build() {
-    use std::env;
+    use std::{env, process::Command};
 
     if !std::path::Path::new("ton/tonlib").is_dir() {
         let status = std::process::Command::new("git")
@@ -19,8 +19,25 @@ fn build() {
     println!("cargo:rerun-if-changed=ton/CMakeLists.txt");
     println!("cargo:rerun-if-changed=build.rs");
 
-    if !cfg!(target_os = "linux") {
+    if cfg!(target_os = "macos") {
         env::set_var("NUM_JOBS", num_cpus::get().to_string());
+        let output = Command::new("brew")
+            .args(&["--prefix", "openssl@3"])
+            .output()
+            .unwrap();
+
+        if !output.status.success() {
+            panic!("OpenSSL not installed");
+        }
+
+        let openssl = std::str::from_utf8(output.stdout.as_slice())
+            .unwrap()
+            .trim();
+        env::set_var("OPENSSL_ROOT_DIR", openssl);
+        env::set_var("OPENSSL_INCLUDE_DIR", format!("{openssl}/include"));
+        env::set_var("OPENSSL_CRYPTO_LIBRARY", format!("{openssl}/lib"));
+
+        println!("cargo:rustc-link-search=native={openssl}/lib");
     }
 
     let dst = cmake::Config::new("ton")
@@ -110,10 +127,15 @@ fn build() {
     println!("cargo:rustc-link-lib=z");
     println!("cargo:rustc-link-lib=crypto");
     println!("cargo:rustc-link-lib=dl");
-    println!("cargo:rustc-link-lib=dylib=stdc++");
+
+    if cfg!(target_os = "macos") {
+        println!("cargo:rustc-link-lib=dylib=c++");
+    } else if cfg!(target_os = "linux") {
+        println!("cargo:rustc-link-lib=dylib=stdc++");
+    }
 }
 
-#[cfg(not(feature = "cmake-build"))]
+#[cfg(feature = "shared-tonlib")]
 fn build() {
     println!("cargo:rustc-link-lib=tonlibjson.0.5");
 }
