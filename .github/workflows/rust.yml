@@ -20,5 +20,6 @@ jobs:
 
   package:
     needs: build
+    runs-on: ubuntu-latest
     steps:
     - run: cargo package -v --allow-dirty --no-verify
