@@ -13,13 +13,13 @@ To use this library in your Rust application, add the following to your Cargo.to
 
 ```toml
 [dependencies]
-tonlib-json = "0.1.0"
+tonlib-sys = "0.1.0"
 ```
 
 Then, in your Rust code, you can import the library with:
 
 ```rust
-use tonlib_json;
+use tonlib_sys;
 ```
 
 ## Contributing
