@@ -17,10 +17,19 @@ jobs:
     - run: cargo fmt --check
     - run: cargo build --verbose
     - run: cargo test --lib -- --test-threads=1
-
-  package:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
     - uses: actions/checkout@v3
-    - run: cargo package -v --allow-dirty --no-verify
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+    - uses: katyo/publish-crates@v2
+      with:
+        registry-token: ${{ secrets.CRATES_IO_REGISTRY_TOKEN }}
+        args: --no-verify
+
+#  package:
+#    needs: build
+#    runs-on: ubuntu-latest
+#    steps:
+#    - uses: actions/checkout@v3
+#    - run: cargo package -v --allow-dirty --no-verify
