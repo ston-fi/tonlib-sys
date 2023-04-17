@@ -6,6 +6,10 @@ description = "Rust bindings for tonlibjson library"
 license = "MIT"
 authors = ["STON.fi"]
 repository = "https://github.com/ston-fi/tonlib-sys"
+include = [
+    "**/*.rs",
+    "Cargo.toml"
+]
 
 [features]
 default = ["cmake", "num_cpus"]
