@@ -50,6 +50,7 @@ fn build() {
 
     let dst = cmake::Config::new("ton")
         .configure_arg("-DTON_ONLY_TONLIB=true")
+        .configure_arg("-Wno-dev")
         .build_target("tonlibjson_static")
         .very_verbose(true)
         .build();
