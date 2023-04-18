@@ -47,7 +47,7 @@ fn build() {
 
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
-
+    eprintln!("current_dir: {}", env::current_dir().unwrap().display());
     let dst = cmake::Config::new("ton")
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-Wno-dev")
