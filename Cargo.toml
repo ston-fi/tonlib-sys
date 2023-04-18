@@ -8,8 +8,7 @@ authors = ["STON.fi"]
 repository = "https://github.com/ston-fi/tonlib-sys"
 include = [
     "**/*.rs",
-    "Cargo.toml",
-    ".gitmodules"
+    "Cargo.toml"
 ]
 
 [features]

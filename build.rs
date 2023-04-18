@@ -7,12 +7,20 @@ fn build() {
     use std::{env, process::Command};
 
     if !std::path::Path::new("ton/tonlib").is_dir() {
-        let status = std::process::Command::new("git")
+        let clone_status = std::process::Command::new("git")
+            .args(["clone", "https://github.com/ton-blockchain/ton"])
+            .status()
+            .unwrap();
+        if !clone_status.success() {
+            panic!("Git clone TON repo fail");
+        }
+        let update_submodules_status = std::process::Command::new("git")
+            .current_dir("./ton")
             .args(["submodule", "update", "--init", "--recursive"])
             .status()
             .unwrap();
-        if !status.success() {
-            panic!("Git submodule init fail");
+        if !update_submodules_status.success() {
+            panic!("Git update submodules for TON repo fail");
         }
     }
 
