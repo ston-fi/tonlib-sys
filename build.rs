@@ -8,7 +8,12 @@ fn build() {
 
     if !std::path::Path::new("ton/tonlib").is_dir() {
         let clone_status = std::process::Command::new("git")
-            .args(["clone", "https://github.com/ton-blockchain/ton", "--branch", "v2023.01"])
+            .args([
+                "clone",
+                "https://github.com/ton-blockchain/ton",
+                "--branch",
+                "v2023.01",
+            ])
             .status()
             .unwrap();
         if !clone_status.success() {
