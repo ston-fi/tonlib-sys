@@ -12,7 +12,7 @@ fn build() {
                 "clone",
                 "https://github.com/ton-blockchain/ton",
                 "--branch",
-                "v2023.01",
+                "v2023.06",
             ])
             .status()
             .unwrap();
@@ -53,8 +53,8 @@ fn build() {
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
     let dst = cmake::Config::new("ton")
-        .configure_arg("-DTON_ONLY_TONLIB=true")
-        .build_target("tonlibjson_static")
+        .configure_arg("-DTON_ONLY_TONLIB=true -DBUILD_SHARED_LIBS=OFF")
+        .build_target("tonlibjson")
         .very_verbose(true)
         .build();
 
@@ -62,7 +62,7 @@ fn build() {
         "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
-    println!("cargo:rustc-link-lib=static=tonlibjson_static");
+    println!("cargo:rustc-link-lib=tonlibjson");
 
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
     println!("cargo:rustc-link-lib=static=tonlib");
