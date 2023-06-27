@@ -58,6 +58,7 @@ fn build() {
         env::set_var("OPENSSL_ROOT_DIR", openssl);
         env::set_var("OPENSSL_INCLUDE_DIR", format!("{openssl}/include"));
         env::set_var("OPENSSL_CRYPTO_LIBRARY", format!("{openssl}/lib"));
+        env::set_var("CXX", "clang++");
 
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
