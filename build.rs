@@ -159,5 +159,5 @@ fn build() {
 
 #[cfg(feature = "shared-tonlib")]
 fn build() {
-    println!("cargo:rustc-link-lib=static=tonlibjson.0.5");
+    println!("cargo:rustc-link-lib=tonlibjson.0.5");
 }
