@@ -4,7 +4,6 @@ fn main() {
 
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
-
     if !std::path::Path::new("ton/tonlib").is_dir() {
         let clone_status = std::process::Command::new("git")
             .args([
