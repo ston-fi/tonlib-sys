@@ -103,7 +103,7 @@ fn build() {
         "cargo:rustc-link-search=static={}/build/emulator",
         dst.display()
     );
-    println!("cargo:rustc-link-lib=static=emulator_static");
+    println!("cargo:rustc-link-lib=dylib=emulator_static");
 
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
