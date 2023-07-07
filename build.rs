@@ -92,23 +92,10 @@ fn build() {
         .very_verbose(false)
         .build();
 
-    println!(
-        "cargo:rustc-link-search=native={}/build/tonlib",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=tonlibjson");
-
-    println!(
-        "cargo:rustc-link-search=static={}/build/tonlib",
-        dst.display()
-    );
-
-    println!("cargo:rustc-link-lib=static=tonlibjson_private");
-    println!(
-        "cargo:rustc-link-search=static={}/build/tonlib",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=tonlib");
+    println!("cargo:rustc-link-search={}/build/tonlib", dst.display());
+    println!("cargo:rustc-link-lib=tonlibjson");
+    println!("cargo:rustc-link-lib=tonlibjson_private");
+    println!("cargo:rustc-link-lib=tonlib");
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
         dst.display()
