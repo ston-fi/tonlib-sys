@@ -92,7 +92,6 @@ fn build() {
         .very_verbose(false)
         .build();
 
-
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
         dst.display()
