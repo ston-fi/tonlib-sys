@@ -93,7 +93,9 @@ fn build() {
         .build();
 
     println!("cargo:rustc-link-search={}/build/tonlib", dst.display());
+
     println!("cargo:rustc-link-lib=dylib=tonlibjson");
+    
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
     println!("cargo:rustc-link-lib=static=tonlib");
     println!(
@@ -174,6 +176,8 @@ fn build() {
     } else if cfg!(target_os = "linux") {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     }
+
+    println!("cargo:rustc-link-lib=static=tonlibjson");
 }
 
 #[cfg(feature = "shared-tonlib")]
