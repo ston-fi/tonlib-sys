@@ -93,7 +93,7 @@ fn build() {
         .build();
 
     println!(
-        "cargo:rustc-link-search=static={}/build/tonlib",
+        "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=tonlibjson");
