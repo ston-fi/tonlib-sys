@@ -12,7 +12,7 @@ fn build() {
                 "clone",
                 "https://github.com/ton-blockchain/ton",
                 "--branch",
-                "v2023.01",
+                "v2023.06",
             ])
             .status()
             .unwrap();
@@ -34,21 +34,31 @@ fn build() {
 
     if cfg!(target_os = "macos") {
         env::set_var("NUM_JOBS", num_cpus::get().to_string());
-        let output = Command::new("brew")
+        let openssl_installed = Command::new("brew")
             .args(&["--prefix", "openssl@3"])
             .output()
             .unwrap();
 
-        if !output.status.success() {
+        if !openssl_installed.status.success() {
             panic!("OpenSSL not installed");
         }
 
-        let openssl = std::str::from_utf8(output.stdout.as_slice())
+        let pkgconfig_installed = Command::new("brew")
+            .args(&["list", "pkgconfig"])
+            .output()
+            .unwrap();
+
+        if !pkgconfig_installed.status.success() {
+            panic!("pkg-config not installed. To install `brew install pkgconfig`");
+        }
+
+        let openssl = std::str::from_utf8(openssl_installed.stdout.as_slice())
             .unwrap()
             .trim();
         env::set_var("OPENSSL_ROOT_DIR", openssl);
         env::set_var("OPENSSL_INCLUDE_DIR", format!("{openssl}/include"));
         env::set_var("OPENSSL_CRYPTO_LIBRARY", format!("{openssl}/lib"));
+        env::set_var("CXX", "clang++");
 
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
