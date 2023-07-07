@@ -18,11 +18,11 @@ variables:
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
   RUSTFLAGS: "-D warnings"
 
-cache:
-  key: shared-cache
-  paths:
-    - target/
-    - .cargo/
+cache: []
+#  key: shared-cache
+#  paths:
+#    - target/
+#    - .cargo/
 
 test-branch:
   stage: test
