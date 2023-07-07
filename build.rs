@@ -97,9 +97,7 @@ fn build() {
         dst.display()
     );
 
-
-    println!(
-        "cargo:rustc-flags=-L {}/build/tonlib",dst.display());
+    println!("cargo:rustc-flags=-L {}/build/tonlib", dst.display());
     println!("cargo:rustc-link-lib=static=tonlibjson");
 
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
