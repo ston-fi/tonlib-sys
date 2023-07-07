@@ -92,10 +92,6 @@ fn build() {
         .very_verbose(false)
         .build();
 
-    println!("cargo:rustc-link-lib=static=tonlibjson");
-
-    println!("cargo:rustc-link-lib=static=tonlibjson_private");
-    println!("cargo:rustc-link-lib=static=tonlib");
 
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
@@ -171,9 +167,9 @@ fn build() {
     println!("cargo:rustc-link-lib=dl");
 
     if cfg!(target_os = "macos") {
-        println!("cargo:rustc-link-lib=static=c++");
+        println!("cargo:rustc-link-lib=dylib=c++");
     } else if cfg!(target_os = "linux") {
-        println!("cargo:rustc-link-lib=static=stdc++");
+        println!("cargo:rustc-link-lib=dylib=stdc++");
     }
 }
 
