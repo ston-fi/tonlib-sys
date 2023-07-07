@@ -97,7 +97,7 @@ fn build() {
     println!("cargo:rustc-link-lib=dylib=tonlibjson");
     
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
-    println!("cargo:rustc-link-lib=static=tonlib");
+    println!("cargo:rustc-link-lib=dylib=tonlib");
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
         dst.display()
@@ -178,6 +178,7 @@ fn build() {
     }
 
     println!("cargo:rustc-link-lib=static=tonlibjson");
+    println!("cargo:rustc-link-lib=static=tonlib");
 }
 
 #[cfg(feature = "shared-tonlib")]
