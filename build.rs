@@ -4,10 +4,12 @@ fn main() {
 
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
-    use std::{env, process::{Command, exit}};
+    use std::{
+        env,
+        process::{exit, Command},
+    };
 
     if !std::path::Path::new("ton/tonlib").is_dir() {
-
         let repo_dir = "./ton"; // Directory where the repository will be cloned
 
         // Check if the repository directory exists
@@ -18,7 +20,7 @@ fn build() {
                 .arg(repo_dir)
                 .status()
                 .unwrap();
-            
+
             // Check if the deletion was successful
             if !delete_status.success() {
                 eprintln!("Failed to delete the existing repository directory.");
