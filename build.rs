@@ -98,9 +98,6 @@ fn build() {
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
     println!("cargo:rustc-link-lib=dylib=tonlib");
 
-    println!("cargo:rustc-link-search={}/build/emulator", dst.display());
-    println!("cargo:rustc-link-lib=dylib=emulator_static");
-
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
         dst.display()
