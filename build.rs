@@ -181,7 +181,7 @@ fn build() {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     }
 
-//    println!("cargo:rustc-link-lib=static=tonlibjson");
+    //    println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=tonlib");
     println!("cargo:rustc-link-lib=static=emulator_static");
 }
