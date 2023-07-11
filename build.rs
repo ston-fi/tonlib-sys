@@ -110,6 +110,11 @@ fn build() {
         "cargo:rustc-link-search=native={}/build/emulator",
         dst.display()
     );
+
+    println!(
+        "cargo:rustc-link-search=static={}/build/emulator",
+        dst.display()
+    );
     println!("cargo:rustc-link-lib=dylib=emulator_static");
 
     println!(
