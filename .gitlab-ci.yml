@@ -41,6 +41,9 @@ test-mr:
     - ston
   stage: test
   script:
+    - cmake -version
+    - gcc -v
+    - g++ -v
     - cargo fmt --check
     - cargo build -vv
     - cargo test -vv --lib -- --test-threads=1
