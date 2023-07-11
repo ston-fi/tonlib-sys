@@ -88,23 +88,21 @@ fn build() {
         .define("BUILD_SHARED_LIBS", "false")
         .configure_arg("-Wno-dev")
         .build_target("tonlibjson")
-        .always_configure(true)
-        .very_verbose(false)
         .build();
 
     println!(
-        "cargo:rustc-link-search=native{}/build/tonlib",
+        "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
     println!(
-        "cargo:rustc-link-search=static{}/build/tonlib",
+        "cargo:rustc-link-search=static={}/build/tonlib",
         dst.display()
     );
 
     println!("cargo:rustc-link-lib=static=tonlibjson");
 
     println!(
-        "cargo:rustc-link-search=static{}/build/tonlib",
+        "cargo:rustc-link-search=static={}/build/tonlib",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
