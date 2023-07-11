@@ -87,6 +87,7 @@ fn build() {
         .define("TON_ONLY_TONLIB", "true")
         .define("BUILD_SHARED_LIBS", "false")
         .configure_arg("-Wno-dev")
+        .build_target("tonlibjson")
         .always_configure(true)
         .very_verbose(false)
         .build();
@@ -97,6 +98,9 @@ fn build() {
 
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
     println!("cargo:rustc-link-lib=dylib=tonlib");
+
+    println!("cargo:rustc-link-search={}/build/emulator", dst.display());
+    println!("cargo:rustc-link-lib=dylib=emulator_static");
 
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
@@ -177,7 +181,9 @@ fn build() {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     }
 
+    println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=tonlib");
+    println!("cargo:rustc-link-lib=static=emulator_static");
 }
 
 #[cfg(feature = "shared-tonlib")]
