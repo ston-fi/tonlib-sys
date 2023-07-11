@@ -92,8 +92,6 @@ fn build() {
         .very_verbose(false)
         .build();
 
-
-        
     println!("cargo:rustc-link-search={}/build/tonlib", dst.display());
 
     println!("cargo:rustc-link-lib=dylib=tonlibjson");
