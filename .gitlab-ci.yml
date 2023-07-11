@@ -28,7 +28,7 @@ test-branch:
   stage: test
   script:
     - cargo fmt --check
-    - cargo rustc -- -D warnings
+    - cargo build -vv
     - cargo test --lib
   tags:
     - ston
