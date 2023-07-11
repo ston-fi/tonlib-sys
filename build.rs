@@ -87,7 +87,6 @@ fn build() {
         .define("TON_ONLY_TONLIB", "true")
         .define("BUILD_SHARED_LIBS", "false")
         .configure_arg("-Wno-dev")
-        .build_target("emulator_static")
         .always_configure(true)
         .very_verbose(false)
         .build();
