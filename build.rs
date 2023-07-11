@@ -96,12 +96,20 @@ fn build() {
         "cargo:rustc-link-search=native{}/build/tonlib",
         dst.display()
     );
+    println!(
+        "cargo:rustc-link-search=static{}/build/tonlib",
+        dst.display()
+    );
 
     println!("cargo:rustc-link-lib=static=tonlibjson");
 
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
     println!("cargo:rustc-link-lib=dylib=tonlib");
 
+    println!(
+        "cargo:rustc-link-search=native{}/build/emulator",
+        dst.display()
+    );
     println!(
         "cargo:rustc-link-search=static{}/build/emulator",
         dst.display()
@@ -186,6 +194,9 @@ fn build() {
     } else if cfg!(target_os = "linux") {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     }
+    println!("cargo:rustc-link-lib=static=tonlibjson");
+    println!("cargo:rustc-link-lib=static=tonlib");
+    println!("cargo:rustc-link-lib=static=emulator_static");
 }
 
 #[cfg(feature = "shared-tonlib")]
