@@ -87,11 +87,13 @@ fn build() {
         .define("TON_ONLY_TONLIB", "true")
         .define("BUILD_SHARED_LIBS", "false")
         .configure_arg("-Wno-dev")
-        .build_target("tonlibjson emulator_static")
+        .build_target("emulator_static")
         .always_configure(true)
         .very_verbose(false)
         .build();
 
+
+        
     println!("cargo:rustc-link-search={}/build/tonlib", dst.display());
 
     println!("cargo:rustc-link-lib=dylib=tonlibjson");
