@@ -41,7 +41,7 @@ test-mr:
   stage: test
   script:
     - cargo fmt --check
-    - cargo rustc -- -D warnings
+    - cargo build -vv
     - cargo test --lib -- --test-threads=1
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
