@@ -180,7 +180,6 @@ fn build() {
     } else if cfg!(target_os = "linux") {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     }
-
 }
 
 #[cfg(feature = "shared-tonlib")]
