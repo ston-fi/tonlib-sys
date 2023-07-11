@@ -27,6 +27,7 @@ cache: []
 test-branch:
   stage: test
   script:
+    - cmake -version
     - cargo fmt --check
     - cargo build -vv
     - cargo test -vv --lib
@@ -40,6 +41,7 @@ test-mr:
     - ston
   stage: test
   script:
+    - cmake -version
     - cargo fmt --check
     - cargo build -vv
     - cargo test -vv --lib -- --test-threads=1
