@@ -96,6 +96,10 @@ fn build() {
         "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
+    println!(
+        "cargo:rustc-link-search=static={}/build/tonlib",
+        dst.display()
+    );
 
     println!("cargo:rustc-link-lib=dylib=tonlibjson");
 
@@ -187,13 +191,7 @@ fn build() {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     }
 
-    println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=tonlib");
-    println!(
-        "cargo:rustc-link-search=native={}/build/tonlib",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=emulator_static");
 }
 
