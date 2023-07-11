@@ -29,7 +29,7 @@ test-branch:
   script:
     - cargo fmt --check
     - cargo build -vv
-    - cargo test --lib
+    - cargo test -vv --lib
   tags:
     - ston
   rules:
@@ -42,7 +42,7 @@ test-mr:
   script:
     - cargo fmt --check
     - cargo build -vv
-    - cargo test --lib -- --test-threads=1
+    - cargo test -vv --lib -- --test-threads=1
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
 
