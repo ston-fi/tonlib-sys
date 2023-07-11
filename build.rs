@@ -180,11 +180,14 @@ fn build() {
     } else if cfg!(target_os = "linux") {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     }
-    println!("cargo:rustc-link-lib=dylib=emulator_static");
+    println!(
+        "cargo:rustc-link-search=static={}/build/emulator",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=emulator_static");
 }
 
 #[cfg(feature = "shared-tonlib")]
 fn build() {
     println!("cargo:rustc-link-lib=tonlibjson.0.5");
-    println!("cargo:rustc-link-lib=dylib=emulator_static");
 }
