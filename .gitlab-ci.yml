@@ -27,7 +27,7 @@ cache: []
 test-branch:
   stage: test
   script:
-     - cmake -version
+    - cmake -version
     - cargo fmt --check
     - cargo build -vv
     - cargo test -vv --lib
