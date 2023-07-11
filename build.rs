@@ -88,6 +88,7 @@ fn build() {
         .define("BUILD_SHARED_LIBS", "false")
         .configure_arg("-Wno-dev")
         .build_target("tonlibjson")
+        .build_target("emulator_static")
         .always_configure(true)
         .very_verbose(false)
         .build();
@@ -110,7 +111,6 @@ fn build() {
         "cargo:rustc-link-search=native={}/build/emulator",
         dst.display()
     );
-
     println!(
         "cargo:rustc-link-search=static={}/build/emulator",
         dst.display()
