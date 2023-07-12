@@ -146,5 +146,16 @@ fn build() {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=tonlib");
+
+    cmake::Config::new("ton")
+        .define("TON_ONLY_TONLIB", "ON")
+        .define("BUILD_SHARED_LIBS", "OFF")
+        .configure_arg("-Wno-dev")
+        .build_target("ton_block")
+        .build_target("tonlibjson")
+        .always_configure(true)
+        .very_verbose(false)
+        .build();
+
     println!("cargo:rustc-link-lib=static=tonlibjson");
 }
