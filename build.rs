@@ -93,11 +93,11 @@ fn build() {
         .build();
 
     println!(
-        "cargo:rustc-link-search=static={}/build/emulator",
+        "cargo:rustc-link-search=native={}/build/emulator",
         dst.display()
     );
     println!(
-        "cargo:rustc-link-search=static={}/build/tonlib",
+        "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
 
