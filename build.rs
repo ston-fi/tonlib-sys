@@ -98,6 +98,18 @@ fn build() {
     );
     println!("cargo:rustc-link-lib=static=tdutils");
 
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdactor",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdactor");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/adnl",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=adnllite");
+
     if cfg!(target_os = "macos") {
         println!("cargo:rustc-link-lib=dylib=c++");
     } else if cfg!(target_os = "linux") {
