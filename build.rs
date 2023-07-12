@@ -85,6 +85,7 @@ fn build() {
     }
     let dst = cmake::Config::new("ton")
         .define("TON_ONLY_TONLIB", "ON")
+        .define("USE_EMSCRIPTEN","111")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev")
         .build_target("tonlibjson")
