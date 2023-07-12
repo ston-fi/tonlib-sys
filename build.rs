@@ -83,6 +83,7 @@ fn build() {
 
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
+
     let dst = cmake::Config::new("ton")
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
@@ -93,6 +94,12 @@ fn build() {
         .always_configure(true)
         .very_verbose(true)
         .build();
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/third-party/crc32c",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=crc32c");
 
     println!(
         "cargo:rustc-link-search=native={}/build/emulator",
@@ -165,12 +172,6 @@ fn build() {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=tdutils");
-
-    println!(
-        "cargo:rustc-link-search=native={}/build/third-party/crc32c",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=crc32c");
 
     println!("cargo:rustc-link-lib=z");
     println!("cargo:rustc-link-lib=crypto");
