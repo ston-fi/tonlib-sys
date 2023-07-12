@@ -41,6 +41,7 @@ test-mr:
     - ston
   stage: test
   script:
+    - env
     - cmake -version
     - gcc -v
     - g++ -v
