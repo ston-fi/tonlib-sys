@@ -88,6 +88,7 @@ fn build() {
         .define("USE_EMSCRIPTEN","111")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev")
+        .build_target("ton_block")
         .build_target("tonlibjson")
         .always_configure(true)
         .very_verbose(false)
