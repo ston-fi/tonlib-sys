@@ -5,8 +5,8 @@ fn main() {
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
     use std::{
-        env,
-        process::{exit, Command}, fs,
+        env, fs,
+        process::{exit, Command},
     };
 
     if !std::path::Path::new("ton/tonlib").is_dir() {
@@ -191,7 +191,7 @@ fn build() {
     // println!("cargo:rerun-if-changed={}/build/tonlib", dst.display());
     // println!("cargo:rerun-if-changed={}/build/emulator", dst.display());
 
-    ///println!("cargo:rustc-link-lib=static=tonlibjson");
+    //println!("cargo:rustc-link-lib=static=tonlibjson");
     // println!("cargo:rustc-link-lib=static=tonlib");
     // println!("cargo:rustc-link-lib=static=tonlibjson_private");
     //println!("cargo:rustc-link-lib=static=emulator_static");
