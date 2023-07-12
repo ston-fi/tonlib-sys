@@ -99,6 +99,7 @@ fn build() {
 
     let dst = cmake::Config::new("ton")
         .define("TON_ONLY_TONLIB", "ON")
+        .define("CMAKE_POSITION_INDEPENDENT_CODE", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev")
         .configure_arg("-U BUILD_SHARED_LIBS")
@@ -107,7 +108,6 @@ fn build() {
         .very_verbose(false)
         .build();
 
-    cc::Build::new().cpp(true).shared_flag(false);
     // println!(
     //     "cargo:rustc-link-search=native={}/build/emulator",
     //     dst.display()
