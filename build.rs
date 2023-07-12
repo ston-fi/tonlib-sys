@@ -110,7 +110,6 @@ fn build() {
         .very_verbose(false)
         .build();
 
-
     println!(
         "cargo:rustc-link-search=native={}/build/tdutils",
         dst.display()
@@ -128,6 +127,14 @@ fn build() {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=adnllite");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/crypto",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=smc-envelope");
+    println!("cargo:rustc-link-lib=static=ton_block");
+    println!("cargo:rustc-link-lib=static=ton_crypto");
 
     if cfg!(target_os = "macos") {
         println!("cargo:rustc-link-lib=dylib=c++");
