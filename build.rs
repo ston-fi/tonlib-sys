@@ -187,7 +187,6 @@ fn build() {
     println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=tonlib");
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
-    println!("cargo:rustc-link-lib=static=emulator_static");
 }
 
 #[cfg(feature = "shared-tonlib")]
