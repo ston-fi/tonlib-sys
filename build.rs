@@ -87,7 +87,7 @@ fn build() {
         //.define("TON_ONLY_TONLIB","ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev")
-        .define("USE_EMSCRIPTEN", "OFF")
+        .define("USE_EMSCRIPTEN", "ON")
         .build_target("tonlibjson")
         .always_configure(true)
         .very_verbose(false)
@@ -97,6 +97,7 @@ fn build() {
         "cargo:rustc-link-search=native={}/build/emulator",
         dst.display()
     );
+    println!("cargo:rustc-link-lib=static=emulator_static");
     println!(
         "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
