@@ -84,18 +84,18 @@ fn build() {
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
 
-    let dst = cmake::Config::new("ton")
-        .configure_arg("-Wno-dev")
-        .build_target("crc32c")
-        .always_configure(false)
-        .very_verbose(false)
-        .build();
+    // let dst = cmake::Config::new("ton")
+    //     .configure_arg("-Wno-dev")
+    //     .build_target("crc32c")
+    //     .always_configure(false)
+    //     .very_verbose(false)
+    //     .build();
 
-    println!(
-        "cargo:rustc-link-search=native={}/build/third-party/crc32c",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=crc32c");
+    // println!(
+    //     "cargo:rustc-link-search=native={}/build/third-party/crc32c",
+    //     dst.display()
+    // );
+    // println!("cargo:rustc-link-lib=static=crc32c");
 
     let dst = cmake::Config::new("ton")
         .define("TON_ONLY_TONLIB", "ON")
