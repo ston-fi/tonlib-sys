@@ -5,7 +5,7 @@ fn main() {
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
     use std::{
-        env, fs,
+        env,
         process::{exit, Command},
     };
 
