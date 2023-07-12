@@ -92,15 +92,15 @@ fn build() {
         .very_verbose(false)
         .build();
 
-        if cfg!(target_os = "macos") {
-            println!("cargo:rustc-link-lib=dylib=c++");
-        } else if cfg!(target_os = "linux") {
-            println!("cargo:rustc-link-lib=dylib=stdc++");
-        }
-        println!(
-            "cargo:rustc-link-search=native={}/build/tonlib",
-            dst.display()
-        );
-        println!("cargo:rustc-link-lib=static=tonlib");
-        println!("cargo:rustc-link-lib=static=tonlibjson");
+    if cfg!(target_os = "macos") {
+        println!("cargo:rustc-link-lib=dylib=c++");
+    } else if cfg!(target_os = "linux") {
+        println!("cargo:rustc-link-lib=dylib=stdc++");
+    }
+    println!(
+        "cargo:rustc-link-search=native={}/build/tonlib",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tonlib");
+    println!("cargo:rustc-link-lib=static=tonlibjson");
 }
