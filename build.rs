@@ -101,7 +101,6 @@ fn build() {
     std::env::set_var("CMAKE_FIND_LIBRARY_SUFFIXES", ".a");
 
     let dst = cmake::Config::new("ton")
-        .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev -Wdeprecated-declarations")
         .build_target("ton_block")
@@ -146,28 +145,4 @@ fn build() {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=tonlib");
-
-    //build static version of tonlibjson
-    cmake::Config::new("ton")
-        .define("TON_ONLY_TONLIB", "ON")
-        .define("BUILD_SHARED_LIBS", "OFF")
-        .define("USE_EMSCRIPTEN", "OFF")
-        .configure_arg("-Wno-dev -Wdeprecated-declarations")
-        .build_target("ton_block")
-        .build_target("tonlibjson")
-        .always_configure(true)
-        .very_verbose(false)
-        .build();
-
-    println!(
-        "cargo:rustc-link-search=native={}/build/tonlib",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=tonlibjson");
-
-    println!(
-        "cargo:rustc-link-search=native={}/build/tdutils",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=tdutils");
 }
