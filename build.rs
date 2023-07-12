@@ -92,6 +92,12 @@ fn build() {
         .very_verbose(false)
         .build();
 
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdutils",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdutils");
+
     if cfg!(target_os = "macos") {
         println!("cargo:rustc-link-lib=dylib=c++");
     } else if cfg!(target_os = "linux") {
