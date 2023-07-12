@@ -101,6 +101,7 @@ fn build() {
         .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev")
+        .configure_arg("-U BUILD_SHARED_LIBS")
         .build_target("tonlibjson")
         .always_configure(false)
         .very_verbose(false)
