@@ -53,6 +53,7 @@ fn build() {
     println!("cargo:rerun-if-changed=ton/CMakeLists.txt");
     println!("cargo:rerun-if-changed=build.rs");
 
+
     if cfg!(target_os = "macos") {
         env::set_var("NUM_JOBS", num_cpus::get().to_string());
         let openssl_installed = Command::new("brew")
@@ -96,6 +97,7 @@ fn build() {
 
     println!("cargo:rustc-link-lib=dylib=tonlibjson");
 
+    println!("cargo:rerun-if-changed={}/build/tonlib", dst.display());
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
     println!("cargo:rustc-link-lib=dylib=tonlib");
 
