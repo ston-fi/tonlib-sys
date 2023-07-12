@@ -107,6 +107,7 @@ fn build() {
         .very_verbose(false)
         .build();
 
+    cc::Build::new().cpp(true).shared_flag(false);
     // println!(
     //     "cargo:rustc-link-search=native={}/build/emulator",
     //     dst.display()
