@@ -147,6 +147,7 @@ fn build() {
     );
     println!("cargo:rustc-link-lib=static=tonlib");
 
+    //build static version of tonlibjson
     cmake::Config::new("ton")
         .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
