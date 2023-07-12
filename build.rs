@@ -87,10 +87,10 @@ fn build() {
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
         .configure_arg("-Wno-dev")
-        .configure_arg("-U BUILD_SHARED_LIBS")
+        .configure_arg("-DUSE_EMSCRIPTEN")
         .build_target("tonlibjson")
         .always_configure(true)
-        .very_verbose(true)
+        .very_verbose(false)
         .build();
 
     println!(
