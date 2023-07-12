@@ -99,7 +99,7 @@ fn build() {
 
     let dst = cmake::Config::new("ton")
         .define("TON_ONLY_TONLIB", "ON")
-        .define("CMAKE_POSITION_INDEPENDENT_CODE", "ON")
+        .define("USE_EMSCRIPTEN", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev")
         .configure_arg("-U BUILD_SHARED_LIBS")
