@@ -162,4 +162,10 @@ fn build() {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=tonlibjson");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdutils",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdutils");
 }
