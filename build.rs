@@ -86,12 +86,12 @@ fn build() {
     let dst = cmake::Config::new("ton")
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
-        // .define("TON_ONLY_TONLIB", "ON")
-        // .define("BUILD_SHARED_LIBS", "OFF")
+        .define("TON_ONLY_TONLIB", "ON")
+        .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev")
         .build_target("tonlibjson")
         .always_configure(true)
-        .very_verbose(false)
+        .very_verbose(true)
         .build();
 
     println!(
