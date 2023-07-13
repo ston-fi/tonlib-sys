@@ -106,7 +106,7 @@ fn build() {
     println!("cargo:rerun-if-changed=ton/crypto/block");
 
     let dst = cmake::Config::new("ton")
-        .configure_arg("-DUSE_EMSCRIPTEN=ON")
+        .configure_arg("-UUSE_EMSCRIPTEN")
         .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev -Wdeprecated-declarations")
