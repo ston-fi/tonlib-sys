@@ -84,27 +84,11 @@ fn build() {
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
 
-    let mut cmake_flags = String::from("-static-libgcc -static-libstdc++");
-    if let Ok(cxx_flags) = std::env::var("CMAKE_CXX_FLAGS") {
-        cmake_flags.push_str(" ");
-        cmake_flags.push_str(&cxx_flags);
-    }
-    std::env::set_var("CMAKE_CXX_FLAGS", cmake_flags);
-
-    let mut module_linker_flags = String::from("-static-libgcc -static-libstdc++");
-    if let Ok(module_flags) = std::env::var("CMAKE_MODULE_LINKER_FLAGS") {
-        module_linker_flags.push_str(" ");
-        module_linker_flags.push_str(&module_flags);
-    }
-    std::env::set_var("CMAKE_MODULE_LINKER_FLAGS", module_linker_flags);
-
-    std::env::set_var("CMAKE_FIND_LIBRARY_SUFFIXES", ".a");
-
     let dst = cmake::Config::new("ton")
+    .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev -Wdeprecated-declarations")
-        .build_target("ton_block")
-        .build_target("tonlibjson")
+        .target("tonlibjson")
         .always_configure(true)
         .very_verbose(false)
         .build();
