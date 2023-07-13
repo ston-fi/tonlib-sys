@@ -94,16 +94,10 @@ fn build() {
         .build();
 
     println!(
-        "cargo:rustc-link-search=native={}/build/tdutils",
+        "cargo:rustc-link-search=native={}/build/lite-client",
         dst.display()
     );
-    println!("cargo:rustc-link-lib=static=tdutils");
-
-    println!(
-        "cargo:rustc-link-search=native={}/build/tdactor",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=tdactor");
+    println!("cargo:rustc-link-lib=static=lite-client-common");
 
     println!(
         "cargo:rustc-link-search=native={}/build/adnl",
@@ -112,12 +106,65 @@ fn build() {
     println!("cargo:rustc-link-lib=static=adnllite");
 
     println!(
+        "cargo:rustc-link-search=native={}/build/tdnet",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdnet");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/keys",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=keys");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/tl-utils",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tl-utils");
+    println!("cargo:rustc-link-lib=static=tl-lite-utils");
+
+    println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
+    println!("cargo:rustc-link-lib=static=tl_lite_api");
+    println!("cargo:rustc-link-lib=static=tl_api");
+    println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
+    println!("cargo:rustc-link-lib=static=tl_tonlib_api");
+
+    println!(
         "cargo:rustc-link-search=native={}/build/crypto",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=smc-envelope");
     println!("cargo:rustc-link-lib=static=ton_block");
     println!("cargo:rustc-link-lib=static=ton_crypto");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/tddb",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tddb_utils");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdactor",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdactor");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdutils",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdutils");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/third-party/crc32c",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=crc32c");
+
+    println!("cargo:rustc-link-lib=z");
+    println!("cargo:rustc-link-lib=crypto");
+    println!("cargo:rustc-link-lib=dl");
 
     if cfg!(target_os = "macos") {
         println!("cargo:rustc-link-lib=dylib=c++");
