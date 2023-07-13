@@ -105,6 +105,7 @@ fn build() {
     let dst = cmake::Config::new("ton")
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
+        .define("CMAKE_SKIP_INSTALL_ERRORS", "ON")
         .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev -Wdeprecated-declarations")
