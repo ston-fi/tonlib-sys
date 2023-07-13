@@ -72,9 +72,6 @@ fn build() {
     }
     // -------------------END OF CHEAT CODE
 
-    println!("cargo:rerun-if-changed=ton/CMakeLists.txt");
-    println!("cargo:rerun-if-changed=build.rs");
-
     if cfg!(target_os = "macos") {
         env::set_var("NUM_JOBS", num_cpus::get().to_string());
         let openssl_installed = Command::new("brew")
