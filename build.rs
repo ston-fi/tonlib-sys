@@ -60,27 +60,11 @@ fn build() {
     let mut modified_lines = Vec::new();
     for line in reader.lines() {
         let line = line.unwrap();
-        // Check if the line matches the specified pattern
-        if line.contains("include(GenerateExportHeader)")
-            && line.contains("if (NOT USE_EMSCRIPTEN AND BUILD_SHARED_LIBS)")
-            && line.contains(
-                "add_library(tonlibjson SHARED ${TONLIB_JSON_SOURCE} ${TONLIB_JSON_HEADERS})",
-            )
-            && line.contains("else()")
-            && line.contains(
-                "add_library(tonlibjson STATIC ${TONLIB_JSON_SOURCE} ${TONLIB_JSON_HEADERS})",
-            )
-            && line.contains("endif()")
-        {
-            // Add the new replacement line
-            modified_lines.push(
-                "add_library(tonlibjson STATIC ${TONLIB_JSON_SOURCE} ${TONLIB_JSON_HEADERS})"
-                    .to_string(),
-            );
-        } else {
-            // If the line doesn't match, add it as it is
-            modified_lines.push(line);
-        }
+        let modified_line = line.replace(
+            "add_library(tonlibjson SHARED ${TONLIB_JSON_SOURCE} ${TONLIB_JSON_HEADERS})",
+            "add_library(tonlibjson STATIC ${TONLIB_JSON_SOURCE} ${TONLIB_JSON_HEADERS})",
+        );
+        modified_lines.push(modified_line);
     }
     let mut file = File::create(file_path).unwrap();
     for line in modified_lines {
@@ -123,8 +107,7 @@ fn build() {
     }
     let dst = cmake::Config::new("ton")
         .define("TON_ONLY_TONLIB", "ON")
-        .define("USE_EMSCRIPTEN", "OFF")
-        .define("BUILD_SHARED_LIBS", "ON")
+        .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev -Wdeprecated-declarations")
         .build_target("tonlibjson")
         .always_configure(true)
