@@ -6,8 +6,6 @@ fn main() {
 fn build() {
     use std::{
         env,
-        //fs::File,
-        //io::{BufRead, BufReader, Write},
         process::{exit, Command},
     };
 
@@ -52,26 +50,8 @@ fn build() {
         }
     }
 
-    // // --------------------------------WARNING!!!!!!!
-    // // This is a cheat code crutch to avoid the bug in 2023.06 version of ton CMake.
-    // let file_path = "ton/tonlib/CMakeLists.txt";
-    // let file = File::open(file_path).unwrap();
-    // let reader = BufReader::new(file);
-    // let mut modified_lines = Vec::new();
-    // for line in reader.lines() {
-    //     let line = line.unwrap();
-    //     let modified_line = line.replace(
-    //         "add_library(tonlibjson SHARED ${TONLIB_JSON_SOURCE} ${TONLIB_JSON_HEADERS})",
-    //         "add_library(tonlibjson STATIC ${TONLIB_JSON_SOURCE} ${TONLIB_JSON_HEADERS})",
-    //     );
-    //     modified_lines.push(modified_line);
-    // }
-    // let mut file = File::create(file_path).unwrap();
-    // modified_lines.push("install(TARGETS tonlibjson_private EXPORT Tonlib)".to_string());
-    // for line in modified_lines {
-    //     writeln!(file, "{}", line).unwrap();
-    // }
-    // // -------------------END OF CHEAT CODE
+    println!("cargo:rerun-if-changed=ton/CMakeLists.txt");
+    println!("cargo:rerun-if-changed=build.rs");
 
     if cfg!(target_os = "macos") {
         env::set_var("NUM_JOBS", num_cpus::get().to_string());
@@ -103,16 +83,16 @@ fn build() {
 
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
-    println!("cargo:rerun-if-changed=ton/crypto/block");
-
     let dst = cmake::Config::new("ton")
-        .configure_arg("-UUSE_EMSCRIPTEN")
+        .configure_arg("-DTON_ONLY_TONLIB=true")
+        .configure_arg("-DBUILD_SHARED_LIBS=false")
         .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
-        .configure_arg("-Wno-dev -Wdeprecated-declarations")
-        .target("tonlibjson")
+        .define("CMAKE_JOB_POOLS", "compile_threads=1")
+        .configure_arg("-Wno-dev")
+        .build_target("tonlibjson")
         .always_configure(true)
-        .very_verbose(false)
+        .very_verbose(true)
         .build();
 
     println!(
