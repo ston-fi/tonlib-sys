@@ -6,6 +6,8 @@ fn main() {
 fn build() {
     use std::{
         env,
+        fs::File,
+        io::{BufRead, BufReader, Write},
         process::{exit, Command},
     };
 
@@ -49,6 +51,35 @@ fn build() {
             panic!("Git update submodules for TON repo fail");
         }
     }
+
+     // Specify the path to the file
+     let file_path = "ton/tonlib/CMakeLists.txt";
+
+     // Open the file in read mode
+     let file = File::open(file_path).unwrap();
+     let reader = BufReader::new(file);
+ 
+     // Create a vector to store the modified lines
+     let mut modified_lines = Vec::new();
+ 
+     // Iterate over each line in the file
+     for line in reader.lines() {
+         let line = line.unwrap();
+ 
+         // Remove "NOT USE_EMSCRIPTEN AND" from the line
+         let modified_line = line.replace("NOT USE_EMSCRIPTEN AND", "");
+ 
+         // Add the modified line to the vector
+         modified_lines.push(modified_line);
+     }
+ 
+     // Open the file in write mode
+     let mut file = File::create(file_path).unwrap();
+ 
+     // Write the modified lines back to the file
+     for line in modified_lines {
+         writeln!(file, "{}", line).unwrap();
+     }
 
     println!("cargo:rerun-if-changed=ton/CMakeLists.txt");
     println!("cargo:rerun-if-changed=build.rs");
