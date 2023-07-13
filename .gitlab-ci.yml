@@ -45,6 +45,7 @@ test-mr:
     - cmake -version
     - gcc -v
     - g++ -v
+    - rm -rf ton
     - cargo fmt --check
     - cargo build -vv
     - cargo test -vv --lib -- --test-threads=1
@@ -56,6 +57,7 @@ test-master:
     - ston
   stage: test
   script:
+    - rm -rf ton
     - cargo fmt --check
     - cargo rustc -- -D warnings
     - cargo test --lib -- --test-threads=1
