@@ -102,15 +102,23 @@ fn build() {
 
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
-
     let dst = cmake::Config::new("ton")
         .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev -Wdeprecated-declarations")
-        .target("tonlibjson")
+        .build_target("tonlibjson")
         .always_configure(true)
         .very_verbose(false)
         .build();
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/emulator",
+        dst.display()
+    );
+    println!(
+        "cargo:rustc-link-search=native={}/build/tonlib",
+        dst.display()
+    );
 
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
@@ -193,16 +201,14 @@ fn build() {
 
     println!("cargo:rerun-if-changed={}/build/tonlib", dst.display());
     println!("cargo:rerun-if-changed={}/build/emulator", dst.display());
-    println!(
-        "cargo:rustc-link-search=native={}/build/tonlib",
-        dst.display()
-    );
-    println!(
-        "cargo:rustc-link-search=native={}/build/emulator",
-        dst.display()
-    );
+
     println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=tonlib");
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
     println!("cargo:rustc-link-lib=static=emulator_static");
+}
+
+#[cfg(feature = "shared-tonlib")]
+fn build() {
+    println!("cargo:rustc-link-lib=tonlibjson.0.5");
 }
