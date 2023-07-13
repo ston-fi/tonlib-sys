@@ -4,15 +4,36 @@ fn main() {
 
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
-    use std::{env, process::Command};
+    use std::{
+        env,
+        process::{exit, Command},
+    };
 
     if !std::path::Path::new("ton/tonlib").is_dir() {
+        let repo_dir = "./ton"; // Directory where the repository will be cloned
+
+        // Check if the repository directory exists
+        if std::path::Path::new(repo_dir).exists() {
+            // If it exists, delete the directory and its contents
+            let delete_status = Command::new("rm")
+                .arg("-rf")
+                .arg(repo_dir)
+                .status()
+                .unwrap();
+
+            // Check if the deletion was successful
+            if !delete_status.success() {
+                eprintln!("Failed to delete the existing repository directory.");
+                exit(1);
+            }
+        }
+
         let clone_status = std::process::Command::new("git")
             .args([
                 "clone",
                 "https://github.com/ton-blockchain/ton",
                 "--branch",
-                "v2023.01",
+                "v2023.06",
             ])
             .status()
             .unwrap();
@@ -34,38 +55,54 @@ fn build() {
 
     if cfg!(target_os = "macos") {
         env::set_var("NUM_JOBS", num_cpus::get().to_string());
-        let output = Command::new("brew")
+        let openssl_installed = Command::new("brew")
             .args(&["--prefix", "openssl@3"])
             .output()
             .unwrap();
 
-        if !output.status.success() {
+        if !openssl_installed.status.success() {
             panic!("OpenSSL not installed");
         }
 
-        let openssl = std::str::from_utf8(output.stdout.as_slice())
+        let pkgconfig_installed = Command::new("brew")
+            .args(&["list", "pkgconfig"])
+            .output()
+            .unwrap();
+
+        if !pkgconfig_installed.status.success() {
+            panic!("pkg-config not installed. To install `brew install pkgconfig`");
+        }
+
+        let openssl = std::str::from_utf8(openssl_installed.stdout.as_slice())
             .unwrap()
             .trim();
         env::set_var("OPENSSL_ROOT_DIR", openssl);
         env::set_var("OPENSSL_INCLUDE_DIR", format!("{openssl}/include"));
         env::set_var("OPENSSL_CRYPTO_LIBRARY", format!("{openssl}/lib"));
+        env::set_var("CXX", "clang++");
 
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
     let dst = cmake::Config::new("ton")
         .configure_arg("-DTON_ONLY_TONLIB=true")
-        .build_target("tonlibjson_static")
+        .configure_arg("-DBUILD_SHARED_LIBS=false")
+        .define("TON_ONLY_TONLIB", "ON")
+        .define("BUILD_SHARED_LIBS", "OFF")
+        .define("CMAKE_JOB_POOLS", "compile_threads=1")
+        .configure_arg("-Wno-dev")
+        .build_target("tonlibjson")
+        .always_configure(true)
         .very_verbose(true)
         .build();
 
     println!(
+        "cargo:rustc-link-search=native={}/build/emulator",
+        dst.display()
+    );
+    println!(
         "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
-    println!("cargo:rustc-link-lib=static=tonlibjson_static");
-
-    println!("cargo:rustc-link-lib=static=tonlibjson_private");
-    println!("cargo:rustc-link-lib=static=tonlib");
 
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
@@ -145,6 +182,14 @@ fn build() {
     } else if cfg!(target_os = "linux") {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     }
+
+    println!("cargo:rerun-if-changed={}/build/tonlib", dst.display());
+    println!("cargo:rerun-if-changed={}/build/emulator", dst.display());
+
+    println!("cargo:rustc-link-lib=static=tonlibjson");
+    println!("cargo:rustc-link-lib=static=tonlib");
+    println!("cargo:rustc-link-lib=static=tonlibjson_private");
+    println!("cargo:rustc-link-lib=static=emulator_static");
 }
 
 #[cfg(feature = "shared-tonlib")]
