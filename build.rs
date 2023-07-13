@@ -67,6 +67,7 @@ fn build() {
         modified_lines.push(modified_line);
     }
     let mut file = File::create(file_path).unwrap();
+    modified_lines.push("install(TARGETS tonlibjson_private EXPORT Tonlib)".to_string());
     for line in modified_lines {
         writeln!(file, "{}", line).unwrap();
     }
