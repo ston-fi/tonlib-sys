@@ -175,5 +175,6 @@ fn build() {
         "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
+    println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=tonlib");
 }
