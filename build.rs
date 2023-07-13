@@ -103,6 +103,8 @@ fn build() {
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
     let dst = cmake::Config::new("ton")
+        .configure_arg("-DTON_ONLY_TONLIB=true")
+        .configure_arg("-DBUILD_SHARED_LIBS=false")
         .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev -Wdeprecated-declarations")
