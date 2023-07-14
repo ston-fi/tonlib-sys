@@ -1,6 +1,6 @@
 [package]
 name = "tonlib-sys"
-version = "0.1.2-dev"
+version = "2023.6.3"
 edition = "2021"
 description = "Rust bindings for tonlibjson library"
 license = "MIT"
