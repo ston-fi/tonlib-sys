@@ -1,6 +1,8 @@
 # Build
 /target
+ton/
 /Cargo.lock
+/.cargo
 
 # Editors
 .DS_Store

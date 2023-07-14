@@ -10,6 +10,7 @@ fn build() {
         let clone_status = std::process::Command::new("git")
             .args([
                 "clone",
+                "--recurse-submodules",
                 "https://github.com/ton-blockchain/ton",
                 "--branch",
                 "v2023.06",
@@ -63,19 +64,25 @@ fn build() {
         println!("cargo:rustc-link-search=native={openssl}/lib");
     }
     let dst = cmake::Config::new("ton")
-        .configure_arg("-DTON_ONLY_TONLIB=true -DBUILD_SHARED_LIBS=OFF")
+        .configure_arg("-DTON_ONLY_TONLIB=true")
+        .configure_arg("-DBUILD_SHARED_LIBS=false")
+        .define("TON_ONLY_TONLIB", "ON")
+        .define("BUILD_SHARED_LIBS", "OFF")
+        .define("CMAKE_JOB_POOLS", "compile_threads=1")
+        .configure_arg("-Wno-dev")
         .build_target("tonlibjson")
+        .always_configure(true)
         .very_verbose(true)
         .build();
 
     println!(
+        "cargo:rustc-link-search=native={}/build/emulator",
+        dst.display()
+    );
+    println!(
         "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
-    println!("cargo:rustc-link-lib=tonlibjson");
-
-    println!("cargo:rustc-link-lib=static=tonlibjson_private");
-    println!("cargo:rustc-link-lib=static=tonlib");
 
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
@@ -155,6 +162,14 @@ fn build() {
     } else if cfg!(target_os = "linux") {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     }
+
+    println!("cargo:rerun-if-changed={}/build/tonlib", dst.display());
+    println!("cargo:rerun-if-changed={}/build/emulator", dst.display());
+
+    println!("cargo:rustc-link-lib=static=tonlibjson");
+    println!("cargo:rustc-link-lib=static=tonlib");
+    println!("cargo:rustc-link-lib=static=tonlibjson_private");
+    println!("cargo:rustc-link-lib=static=emulator_static");
 }
 
 #[cfg(feature = "shared-tonlib")]
