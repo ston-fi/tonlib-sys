@@ -2,6 +2,7 @@
 /target
 /Cargo.lock
 /.cargo
+/ton
 
 # Editors
 .DS_Store
