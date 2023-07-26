@@ -33,7 +33,7 @@ fn build() {
                 "clone",
                 "https://github.com/ton-blockchain/ton",
                 "--branch",
-                "v2023.05",
+                "v2023.03",
             ])
             .status()
             .unwrap();
