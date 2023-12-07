@@ -7,7 +7,6 @@ fn build() {
     use std::{env, process::Command};
 
     if !std::path::Path::new("ton/tonlib").is_dir() {
-
         let clone_status = std::process::Command::new("git")
             .args([
                 "clone",
