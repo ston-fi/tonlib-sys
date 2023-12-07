@@ -31,9 +31,10 @@ fn build() {
         let clone_status = std::process::Command::new("git")
             .args([
                 "clone",
+                "--recurse-submodules",
                 "https://github.com/ton-blockchain/ton",
                 "--branch",
-                "v2023.03",
+                "v2023.06",
             ])
             .status()
             .unwrap();
@@ -182,9 +183,6 @@ fn build() {
     } else if cfg!(target_os = "linux") {
         println!("cargo:rustc-link-lib=dylib=stdc++");
     }
-
-    println!("cargo:rerun-if-changed={}/build/tonlib", dst.display());
-    println!("cargo:rerun-if-changed={}/build/emulator", dst.display());
 
     println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=tonlib");
