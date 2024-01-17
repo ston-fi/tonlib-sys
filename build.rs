@@ -13,7 +13,7 @@ fn build() {
                 "--recurse-submodules",
                 "https://github.com/ton-blockchain/ton",
                 "--branch",
-                "v2023.11",
+                "v2023.12",
             ])
             .status()
             .unwrap();
