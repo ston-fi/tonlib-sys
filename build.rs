@@ -13,7 +13,7 @@ fn build() {
                 "--recurse-submodules",
                 "https://github.com/ton-blockchain/ton",
                 "--branch",
-                "v2024.01",
+                "v2024.03",
             ])
             .status()
             .unwrap();
@@ -38,7 +38,7 @@ fn build() {
 
         // OpenSSL
         let openssl_installed = Command::new("brew")
-            .args(&["--prefix", "openssl@3"])
+            .args(["--prefix", "openssl@3"])
             .output()
             .unwrap();
         if !openssl_installed.status.success() {
@@ -50,7 +50,7 @@ fn build() {
 
         // pkgconfig
         let pkgconfig_installed = Command::new("brew")
-            .args(&["list", "pkgconfig"])
+            .args(["list", "pkgconfig"])
             .output()
             .unwrap();
         if !pkgconfig_installed.status.success() {
@@ -59,7 +59,7 @@ fn build() {
 
         // libsodium
         let libsodium_installed = Command::new("brew")
-            .args(&["--prefix", "libsodium"])
+            .args(["--prefix", "libsodium"])
             .output()
             .unwrap();
         if !libsodium_installed.status.success() {
@@ -71,7 +71,7 @@ fn build() {
 
         // secp256k1
         let secp256k1_installed = Command::new("brew")
-            .args(&["--prefix", "secp256k1"])
+            .args(["--prefix", "secp256k1"])
             .output()
             .unwrap();
         if !secp256k1_installed.status.success() {
