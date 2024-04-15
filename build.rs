@@ -13,10 +13,25 @@ fn build() {
                 "--recurse-submodules",
                 "https://github.com/ton-blockchain/ton",
                 "--branch",
-                "v2024.03",
+                "testnet",
             ])
             .status()
             .unwrap();
+        if clone_status.success() {
+            let checkout_status = std::process::Command::new("git")
+                .current_dir("ton")
+                .args(["checkout", "25f61dff161b9c76dce0fc62dc51da911a208b68"])
+                .status()
+                .unwrap();
+
+            if checkout_status.success() {
+                println!("Cloned and checked out specific commit successfully!");
+            } else {
+                println!("Failed to checkout specific commit!");
+            }
+        } else {
+            println!("Failed to clone repository!");
+        }
         if !clone_status.success() {
             panic!("Git clone TON repo fail");
         }
