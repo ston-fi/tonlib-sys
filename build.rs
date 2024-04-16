@@ -57,11 +57,17 @@ fn build() {
             .output()
             .unwrap();
         if !openssl_installed.status.success() {
-            panic!("OpenSSL not installed. To install `brew install openssl`");
+            panic!("OpenSSL is not installed. To install: `brew install openssl`");
         }
         let openssl = std::str::from_utf8(openssl_installed.stdout.as_slice())
             .unwrap()
             .trim();
+
+        // lz4
+        let lz4_installed = Command::new("brew").args(["list", "lz4"]).output().unwrap();
+        if !lz4_installed.status.success() {
+            panic!("liblz4 is not installed. To install: `brew install lz4`");
+        }
 
         // pkgconfig
         let pkgconfig_installed = Command::new("brew")
@@ -69,7 +75,7 @@ fn build() {
             .output()
             .unwrap();
         if !pkgconfig_installed.status.success() {
-            panic!("pkg-config not installed. To install `brew install pkgconfig`");
+            panic!("pkg-config is not installed. To install: `brew install pkgconfig`");
         }
 
         // libsodium
@@ -78,7 +84,7 @@ fn build() {
             .output()
             .unwrap();
         if !libsodium_installed.status.success() {
-            panic!("libsodium not installed. To install `brew install libsodium`");
+            panic!("libsodium is not installed. To install: `brew install libsodium`");
         }
         let libsodium = std::str::from_utf8(libsodium_installed.stdout.as_slice())
             .unwrap()
@@ -90,7 +96,7 @@ fn build() {
             .output()
             .unwrap();
         if !secp256k1_installed.status.success() {
-            panic!("secp256k1 not installed. To install `brew install secp256k1`");
+            panic!("secp256k1 is not installed. To install: `brew install secp256k1`");
         }
         let secp256k1 = std::str::from_utf8(secp256k1_installed.stdout.as_slice())
             .unwrap()
@@ -116,6 +122,7 @@ fn build_tonlibjson() {
     let dst = cmake::Config::new("ton")
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
+        .configure_arg("-DCMAKE_EXE_LINKER_FLAGS=-L/opt/homebrew/lib")
         .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .configure_arg("-Wno-dev")
