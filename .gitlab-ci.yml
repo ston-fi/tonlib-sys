@@ -16,7 +16,8 @@ variables:
   FF_USE_FASTZIP: 1
   CACHE_COMPRESSION_LEVEL: "fastest"
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
-  RUSTFLAGS: "-D warnings"
+  RUSTFLAGS: "-D warnings -C target-cpu=znver2"
+  TARGET_CPU_MARCH: "znver2"
 
 cache:
   key: shared-cache
@@ -33,7 +34,7 @@ test-branch:
     - g++ -v
     - rm -rf ton
     - cargo fmt --check
-    - cargo rustc -- -D warnings
+    - cargo rustc -- $RUSTFLAGS
     - cargo test --lib
   tags:
     - ston
@@ -51,7 +52,7 @@ test-mr:
     - g++ -v
     - rm -rf ton
     - cargo fmt --check
-    - cargo rustc -- -D warnings
+    - cargo rustc -- $RUSTFLAGS
     - cargo test --lib -- --test-threads=1
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
@@ -62,7 +63,7 @@ test-master:
   stage: test
   script:
     - cargo fmt --check
-    - cargo rustc -- -D warnings
+    - cargo rustc -- $RUSTFLAGS
     - cargo test --lib -- --test-threads=1
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
@@ -81,7 +82,7 @@ release-master:
   script:
     - git checkout $CI_BUILD_REF_NAME
     - cargo fmt --check
-    - cargo rustc -- -D warnings
+    - cargo rustc -- $RUSTFLAGS
     - cargo test --lib -- --test-threads=1
     - cargo release release --execute --no-publish --no-confirm
     - export VERSION=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0]["version"]')
