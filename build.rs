@@ -131,7 +131,6 @@ fn build_tonlibjson(march: &str) {
         .define("BUILD_SHARED_LIBS", "OFF")
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", "Release")
-        //.args(&rust_cmake_args)
         .configure_arg("-Wno-dev")
         .build_target("tonlibjson")
         .always_configure(true)
@@ -264,7 +263,6 @@ fn build_emulator(march: &str) {
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", "Release")
         .build_target("emulator")
-        //.configure_arg()
         .always_configure(true)
         .very_verbose(false);
 
