@@ -1,10 +1,12 @@
+use std::env;
+
 fn main() {
     build();
 }
 
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
-    use std::{env, process::Command};
+    use std::process::Command;
 
     if !std::path::Path::new("ton/tonlib").is_dir() {
         let clone_status = std::process::Command::new("git")
@@ -114,12 +116,14 @@ fn build() {
 
     env::set_var("LD_LIBRARY_PATH", "lib/x86_64-linux-gnu");
 
-    build_tonlibjson();
-    build_emulator();
+    let march = env::var("TARGET_CPU_MARCH").unwrap_or_default();
+    build_tonlibjson(march.as_str());
+    build_emulator(march.as_str());
 }
 
-fn build_tonlibjson() {
-    let dst = cmake::Config::new("ton")
+fn build_tonlibjson(march: &str) {
+    let mut cfg = cmake::Config::new("ton");
+    let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
         .configure_arg("-DCMAKE_EXE_LINKER_FLAGS=-L/opt/homebrew/lib")
@@ -127,11 +131,18 @@ fn build_tonlibjson() {
         .define("BUILD_SHARED_LIBS", "OFF")
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", "Release")
+        //.args(&rust_cmake_args)
         .configure_arg("-Wno-dev")
         .build_target("tonlibjson")
         .always_configure(true)
-        .very_verbose(false)
-        .build();
+        .very_verbose(false);
+
+    if !march.is_empty() {
+        dst = dst
+            .configure_arg(format!("-DCMAKE_C_FLAGS=-march={}", march))
+            .configure_arg(format!("-DCMAKE_CXX_FLAGS=-march={}", march));
+    }
+    let dst = dst.build();
 
     println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
     println!("cargo:rustc-link-search=native=/usr/include");
@@ -242,8 +253,9 @@ fn build_tonlibjson() {
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
 }
 
-fn build_emulator() {
-    let dst = cmake::Config::new("ton")
+fn build_emulator(march: &str) {
+    let mut cfg = cmake::Config::new("ton");
+    let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-Wno-dev")
         .configure_arg("-Wno-unused")
@@ -252,9 +264,16 @@ fn build_emulator() {
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", "Release")
         .build_target("emulator")
+        //.configure_arg()
         .always_configure(true)
-        .very_verbose(false)
-        .build();
+        .very_verbose(false);
+
+    if !march.is_empty() {
+        dst = dst
+            .configure_arg(format!("-DCMAKE_C_FLAGS=-march={}", march))
+            .configure_arg(format!("-DCMAKE_CXX_FLAGS=-march={}", march));
+    }
+    let dst = dst.build();
 
     println!("cargo:rustc-link-lib=dylib=sodium");
     println!("cargo:rustc-link-lib=dylib=secp256k1");
