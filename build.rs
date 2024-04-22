@@ -275,6 +275,8 @@ fn build_emulator(march: &str) {
         .configure_arg("-Wno-deprecated-declarations")
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", "Release")
+        .build_arg("-j")
+        .build_arg(num_cpus::get().to_string())
         .build_target("emulator")
         //.configure_arg()
         .always_configure(true)
