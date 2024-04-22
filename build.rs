@@ -25,10 +25,12 @@ fn build() {
     let clone_status = Command::new("git")
         .args([
             "clone",
-            "--recurse-submodules",
-            "https://github.com/ton-blockchain/ton",
             "--branch",
             "testnet",
+            "--depth",
+            "1",                    // get only the latest commit
+            "--recurse-submodules", // clone submodules as well
+            "https://github.com/ton-blockchain/ton",
             TON_DIR,
         ])
         .status()
