@@ -1,54 +1,64 @@
-use std::env;
+use std::path::Path;
+use std::{env, fs};
 
 fn main() {
     build();
 }
 
+const TONLIB_REVISION: &str = "25f61dff161b9c76dce0fc62dc51da911a208b68";
+const TON_DIR: &str = "./ton";
+
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
+    env::set_var("TONLIB_REVISION", TONLIB_REVISION);
+    println!("cargo:rerun-if-env-changed=TONLIB_REVISION");
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=src");
+
     use std::process::Command;
 
-    if !std::path::Path::new("ton/tonlib").is_dir() {
-        let clone_status = std::process::Command::new("git")
-            .args([
-                "clone",
-                "--recurse-submodules",
-                "https://github.com/ton-blockchain/ton",
-                "--branch",
-                "testnet",
-            ])
-            .status()
-            .unwrap();
-        if clone_status.success() {
-            let checkout_status = std::process::Command::new("git")
-                .current_dir("ton")
-                .args(["checkout", "25f61dff161b9c76dce0fc62dc51da911a208b68"])
-                .status()
-                .unwrap();
-
-            if checkout_status.success() {
-                println!("Cloned and checked out specific commit successfully!");
-            } else {
-                println!("Failed to checkout specific commit!");
-            }
-        } else {
-            println!("Failed to clone repository!");
-        }
-        if !clone_status.success() {
-            panic!("Git clone TON repo fail");
-        }
-        let update_submodules_status = std::process::Command::new("git")
-            .current_dir("./ton")
-            .args(["submodule", "update", "--init", "--recursive"])
-            .status()
-            .unwrap();
-        if !update_submodules_status.success() {
-            panic!("Git update submodules for TON repo fail");
-        }
+    // cleanup tonlib after previous build
+    if Path::new(TON_DIR).exists() {
+        let _ = fs::remove_dir_all(TON_DIR);
     }
 
-    println!("cargo:rerun-if-changed=ton/CMakeLists.txt");
-    println!("cargo:rerun-if-changed=build.rs");
+    let clone_status = Command::new("git")
+        .args([
+            "clone",
+            "--recurse-submodules",
+            "https://github.com/ton-blockchain/ton",
+            "--branch",
+            "testnet",
+            TON_DIR,
+        ])
+        .status()
+        .unwrap();
+    if clone_status.success() {
+        let checkout_status = Command::new("git")
+            .current_dir(TON_DIR)
+            .args(["checkout", TONLIB_REVISION])
+            .status()
+            .unwrap();
+
+        if checkout_status.success() {
+            println!("Cloned and checked out specific commit successfully!");
+        } else {
+            println!("Failed to checkout specific commit!");
+        }
+    } else {
+        println!("Failed to clone repository!");
+    }
+    if !clone_status.success() {
+        panic!("Git clone TON repo fail");
+    }
+    let update_submodules_status = Command::new("git")
+        .current_dir("./ton")
+        .args(["submodule", "update", "--init", "--recursive"])
+        .status()
+        .unwrap();
+    if !update_submodules_status.success() {
+        panic!("Git update submodules for TON repo fail");
+    }
 
     if cfg!(target_os = "macos") {
         env::set_var("NUM_JOBS", num_cpus::get().to_string());
@@ -240,14 +250,12 @@ fn build_tonlibjson(march: &str) {
         "cargo:rustc-link-search=native={}/build/emulator",
         dst.display()
     );
-    println!("cargo:rerun-if-changed={}/build/emulator", dst.display());
     println!("cargo:rustc-link-lib=static=emulator_static");
 
     println!(
         "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
-    println!("cargo:rerun-if-changed={}/build/tonlib", dst.display());
     println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=tonlib");
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
