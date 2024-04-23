@@ -12,11 +12,10 @@ include = [
 ]
 
 [features]
-default = ["cmake", "num_cpus"]
+default = ["cmake"]
 shared-tonlib = []
 
 [dependencies]
 
 [build-dependencies]
 cmake = { version = "0.1", optional = true }
-num_cpus = { version = "1", optional = true }

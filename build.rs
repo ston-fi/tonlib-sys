@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::thread::available_parallelism;
 use std::{env, fs};
 
 fn main() {
@@ -64,8 +65,6 @@ fn build() {
     }
 
     if cfg!(target_os = "macos") {
-        env::set_var("NUM_JOBS", num_cpus::get().to_string());
-
         // OpenSSL
         let openssl_installed = Command::new("brew")
             .args(["--prefix", "openssl@3"])
@@ -145,7 +144,7 @@ fn build_tonlibjson(march: &str) {
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", "Release")
         .build_arg("-j")
-        .build_arg(num_cpus::get().to_string())
+        .build_arg(available_parallelism().unwrap().get().to_string())
         .configure_arg("-Wno-dev")
         .build_target("tonlibjson")
         .always_configure(true)
@@ -276,7 +275,7 @@ fn build_emulator(march: &str) {
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", "Release")
         .build_arg("-j")
-        .build_arg(num_cpus::get().to_string())
+        .build_arg(available_parallelism().unwrap().get().to_string())
         .build_target("emulator")
         //.configure_arg()
         .always_configure(true)
