@@ -56,7 +56,7 @@ fn build() {
         panic!("Git clone TON repo fail");
     }
     let update_submodules_status = Command::new("git")
-        .current_dir("./ton")
+        .current_dir(TON_DIR)
         .args(["submodule", "update", "--init", "--recursive"])
         .status()
         .unwrap();
@@ -134,7 +134,7 @@ fn build() {
 }
 
 fn build_tonlibjson(march: &str) {
-    let mut cfg = cmake::Config::new("ton");
+    let mut cfg = cmake::Config::new(TON_DIR);
     let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
@@ -265,7 +265,7 @@ fn build_tonlibjson(march: &str) {
 }
 
 fn build_emulator(march: &str) {
-    let mut cfg = cmake::Config::new("ton");
+    let mut cfg = cmake::Config::new(TON_DIR);
     let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-Wno-dev")
