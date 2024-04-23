@@ -6,21 +6,21 @@ fn main() {
     build();
 }
 
-const TONLIB_REVISION: &str = "25f61dff161b9c76dce0fc62dc51da911a208b68";
-const TON_DIR: &str = "./ton";
+const TON_MONOREPO_REVISION: &str = "25f61dff161b9c76dce0fc62dc51da911a208b68";
+const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
-    env::set_var("TONLIB_REVISION", TONLIB_REVISION);
-    println!("cargo:rerun-if-env-changed=TONLIB_REVISION");
+    env::set_var("TON_MONOREPO_REVISION", TON_MONOREPO_REVISION);
+    println!("cargo:rerun-if-env-changed=TON_MONOREPO_REVISION");
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src");
 
     use std::process::Command;
 
     // cleanup tonlib after previous build
-    if Path::new(TON_DIR).exists() {
-        let _ = fs::remove_dir_all(TON_DIR);
+    if Path::new(TON_MONOREPO_DIR).exists() {
+        let _ = fs::remove_dir_all(TON_MONOREPO_DIR);
     }
 
     let clone_status = Command::new("git")
@@ -33,14 +33,14 @@ fn build() {
             "--recurse-submodules", // clone submodules as well
             "--shallow-submodules", // get only the latest commit of submodules
             "https://github.com/ton-blockchain/ton",
-            TON_DIR,
+            TON_MONOREPO_DIR,
         ])
         .status()
         .unwrap();
     if clone_status.success() {
         let checkout_status = Command::new("git")
-            .current_dir(TON_DIR)
-            .args(["checkout", TONLIB_REVISION])
+            .current_dir(TON_MONOREPO_DIR)
+            .args(["checkout", TON_MONOREPO_DIR])
             .status()
             .unwrap();
 
@@ -56,7 +56,7 @@ fn build() {
         panic!("Git clone TON repo fail");
     }
     let update_submodules_status = Command::new("git")
-        .current_dir(TON_DIR)
+        .current_dir(TON_MONOREPO_DIR)
         .args(["submodule", "update", "--init", "--recursive"])
         .status()
         .unwrap();
@@ -134,7 +134,7 @@ fn build() {
 }
 
 fn build_tonlibjson(march: &str) {
-    let mut cfg = cmake::Config::new(TON_DIR);
+    let mut cfg = cmake::Config::new(TON_MONOREPO_DIR);
     let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
@@ -143,6 +143,7 @@ fn build_tonlibjson(march: &str) {
         .define("BUILD_SHARED_LIBS", "OFF")
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", "Release")
+        // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
         .build_arg("-j")
         .build_arg(available_parallelism().unwrap().get().to_string())
         .configure_arg("-Wno-dev")
@@ -265,7 +266,7 @@ fn build_tonlibjson(march: &str) {
 }
 
 fn build_emulator(march: &str) {
-    let mut cfg = cmake::Config::new(TON_DIR);
+    let mut cfg = cmake::Config::new(TON_MONOREPO_DIR);
     let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-Wno-dev")
@@ -274,6 +275,7 @@ fn build_emulator(march: &str) {
         .configure_arg("-Wno-deprecated-declarations")
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", "Release")
+        // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
         .build_arg("-j")
         .build_arg(available_parallelism().unwrap().get().to_string())
         .build_target("emulator")
