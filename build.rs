@@ -279,7 +279,6 @@ fn build_emulator(march: &str) {
         .build_arg("-j")
         .build_arg(available_parallelism().unwrap().get().to_string())
         .build_target("emulator")
-        //.configure_arg()
         .always_configure(true)
         .very_verbose(false);
 
