@@ -1,58 +1,70 @@
-use std::env;
+use std::path::Path;
+use std::thread::available_parallelism;
+use std::{env, fs};
 
 fn main() {
     build();
 }
 
+const TON_MONOREPO_REVISION: &str = "25f61dff161b9c76dce0fc62dc51da911a208b68";
+const TON_MONOREPO_DIR: &str = "./ton";
+
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
+    env::set_var("TON_MONOREPO_REVISION", TON_MONOREPO_REVISION);
+    println!("cargo:rerun-if-env-changed=TON_MONOREPO_REVISION");
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=src");
+
     use std::process::Command;
 
-    if !std::path::Path::new("ton/tonlib").is_dir() {
-        let clone_status = std::process::Command::new("git")
-            .args([
-                "clone",
-                "--recurse-submodules",
-                "https://github.com/ton-blockchain/ton",
-                "--branch",
-                "testnet",
-            ])
-            .status()
-            .unwrap();
-        if clone_status.success() {
-            let checkout_status = std::process::Command::new("git")
-                .current_dir("ton")
-                .args(["checkout", "25f61dff161b9c76dce0fc62dc51da911a208b68"])
-                .status()
-                .unwrap();
-
-            if checkout_status.success() {
-                println!("Cloned and checked out specific commit successfully!");
-            } else {
-                println!("Failed to checkout specific commit!");
-            }
-        } else {
-            println!("Failed to clone repository!");
-        }
-        if !clone_status.success() {
-            panic!("Git clone TON repo fail");
-        }
-        let update_submodules_status = std::process::Command::new("git")
-            .current_dir("./ton")
-            .args(["submodule", "update", "--init", "--recursive"])
-            .status()
-            .unwrap();
-        if !update_submodules_status.success() {
-            panic!("Git update submodules for TON repo fail");
-        }
+    // cleanup tonlib after previous build
+    if Path::new(TON_MONOREPO_DIR).exists() {
+        let _ = fs::remove_dir_all(TON_MONOREPO_DIR);
     }
 
-    println!("cargo:rerun-if-changed=ton/CMakeLists.txt");
-    println!("cargo:rerun-if-changed=build.rs");
+    let clone_status = Command::new("git")
+        .args([
+            "clone",
+            "--branch",
+            "testnet",
+            "--depth",
+            "1",                    // get only the latest commit
+            "--recurse-submodules", // clone submodules as well
+            "--shallow-submodules", // get only the latest commit of submodules
+            "https://github.com/ton-blockchain/ton",
+            TON_MONOREPO_DIR,
+        ])
+        .status()
+        .unwrap();
+    if clone_status.success() {
+        let checkout_status = Command::new("git")
+            .current_dir(TON_MONOREPO_DIR)
+            .args(["checkout", TON_MONOREPO_DIR])
+            .status()
+            .unwrap();
+
+        if checkout_status.success() {
+            println!("Cloned and checked out specific commit successfully!");
+        } else {
+            println!("Failed to checkout specific commit!");
+        }
+    } else {
+        println!("Failed to clone repository!");
+    }
+    if !clone_status.success() {
+        panic!("Git clone TON repo fail");
+    }
+    let update_submodules_status = Command::new("git")
+        .current_dir(TON_MONOREPO_DIR)
+        .args(["submodule", "update", "--init", "--recursive"])
+        .status()
+        .unwrap();
+    if !update_submodules_status.success() {
+        panic!("Git update submodules for TON repo fail");
+    }
 
     if cfg!(target_os = "macos") {
-        env::set_var("NUM_JOBS", num_cpus::get().to_string());
-
         // OpenSSL
         let openssl_installed = Command::new("brew")
             .args(["--prefix", "openssl@3"])
@@ -122,7 +134,7 @@ fn build() {
 }
 
 fn build_tonlibjson(march: &str) {
-    let mut cfg = cmake::Config::new("ton");
+    let mut cfg = cmake::Config::new(TON_MONOREPO_DIR);
     let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
@@ -131,6 +143,9 @@ fn build_tonlibjson(march: &str) {
         .define("BUILD_SHARED_LIBS", "OFF")
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", "Release")
+        // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
+        .build_arg("-j")
+        .build_arg(available_parallelism().unwrap().get().to_string())
         .configure_arg("-Wno-dev")
         .build_target("tonlibjson")
         .always_configure(true)
@@ -239,21 +254,19 @@ fn build_tonlibjson(march: &str) {
         "cargo:rustc-link-search=native={}/build/emulator",
         dst.display()
     );
-    println!("cargo:rerun-if-changed={}/build/emulator", dst.display());
     println!("cargo:rustc-link-lib=static=emulator_static");
 
     println!(
         "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
-    println!("cargo:rerun-if-changed={}/build/tonlib", dst.display());
     println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=tonlib");
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
 }
 
 fn build_emulator(march: &str) {
-    let mut cfg = cmake::Config::new("ton");
+    let mut cfg = cmake::Config::new(TON_MONOREPO_DIR);
     let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-Wno-dev")
@@ -262,6 +275,9 @@ fn build_emulator(march: &str) {
         .configure_arg("-Wno-deprecated-declarations")
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", "Release")
+        // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
+        .build_arg("-j")
+        .build_arg(available_parallelism().unwrap().get().to_string())
         .build_target("emulator")
         .always_configure(true)
         .very_verbose(false);
