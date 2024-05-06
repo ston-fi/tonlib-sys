@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::process::Command;
 use std::thread::available_parallelism;
 use std::{env, fs};
 
@@ -15,8 +16,6 @@ fn build() {
     println!("cargo:rerun-if-env-changed=TON_MONOREPO_REVISION");
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=src");
-
-    use std::process::Command;
 
     // cleanup tonlib after previous build
     if Path::new(TON_MONOREPO_DIR).exists() {
@@ -138,7 +137,6 @@ fn build_tonlibjson(march: &str) {
     let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
-        .configure_arg("-DCMAKE_EXE_LINKER_FLAGS=-L/opt/homebrew/lib")
         .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .define("PORTABLE", "1")
@@ -150,6 +148,13 @@ fn build_tonlibjson(march: &str) {
         .build_target("tonlibjson")
         .always_configure(true)
         .very_verbose(false);
+
+    if cfg!(target_os = "macos") {
+        let brew_prefix_output = Command::new("brew").arg("--prefix").output().unwrap();
+        let brew_prefix = String::from_utf8(brew_prefix_output.stdout).unwrap();
+        let lib_arg = format!("-DCMAKE_EXE_LINKER_FLAGS=-L{}/lib", brew_prefix.trim());
+        dst = dst.configure_arg(lib_arg)
+    }
 
     if !march.is_empty() {
         dst = dst
