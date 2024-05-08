@@ -22,9 +22,6 @@ Then, in your Rust code, you can import the library with:
 use tonlib_sys;
 ```
 
-## Cross-compilation
-In order to cross-compile for specific cpu microachitecture set environment variable `TARGET_CPU_MARCH` to the required. Supported values are listen in https://gcc.gnu.org/onlinedocs/gcc/x86-Options.html
-
 
 ## Contributing
 

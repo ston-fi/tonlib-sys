@@ -1,6 +1,6 @@
 [package]
 name = "tonlib-sys"
-version = "2024.3.5"
+version = "2024.3.6"
 edition = "2021"
 description = "Rust bindings for tonlibjson library"
 license = "MIT"
@@ -13,6 +13,7 @@ include = [
 
 [features]
 default = ["cmake"]
+no_avx512 = []
 shared-tonlib = []
 
 [dependencies]
