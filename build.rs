@@ -3,6 +3,8 @@ use std::process::Command;
 use std::thread::available_parallelism;
 use std::{env, fs};
 
+use cmake::Config;
+
 fn main() {
     build();
 }
@@ -12,6 +14,8 @@ const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
+    #[cfg(feature = "no_avx512")]
+    disable_avx512_for_rustc();
     env::set_var("TON_MONOREPO_REVISION", TON_MONOREPO_REVISION);
     println!("cargo:rerun-if-env-changed=TON_MONOREPO_REVISION");
     println!("cargo:rerun-if-changed=build.rs");
@@ -126,14 +130,12 @@ fn build() {
     }
 
     env::set_var("LD_LIBRARY_PATH", "lib/x86_64-linux-gnu");
-
-    let march = env::var("TARGET_CPU_MARCH").unwrap_or_default();
-    build_tonlibjson(march.as_str());
-    build_emulator(march.as_str());
+    build_tonlibjson();
+    build_emulator();
 }
 
-fn build_tonlibjson(march: &str) {
-    let mut cfg = cmake::Config::new(TON_MONOREPO_DIR);
+fn build_tonlibjson() {
+    let mut cfg = Config::new(TON_MONOREPO_DIR);
     let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
@@ -149,6 +151,9 @@ fn build_tonlibjson(march: &str) {
         .always_configure(true)
         .very_verbose(false);
 
+    #[cfg(feature = "no_avx512")]
+    disable_avx512_for_clang(dst);
+
     if cfg!(target_os = "macos") {
         let brew_prefix_output = Command::new("brew").arg("--prefix").output().unwrap();
         let brew_prefix = String::from_utf8(brew_prefix_output.stdout).unwrap();
@@ -156,11 +161,6 @@ fn build_tonlibjson(march: &str) {
         dst = dst.configure_arg(lib_arg)
     }
 
-    if !march.is_empty() {
-        dst = dst
-            .configure_arg(format!("-DCMAKE_C_FLAGS=-march={}", march))
-            .configure_arg(format!("-DCMAKE_CXX_FLAGS=-march={}", march));
-    }
     let dst = dst.build();
 
     println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
@@ -270,9 +270,9 @@ fn build_tonlibjson(march: &str) {
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
 }
 
-fn build_emulator(march: &str) {
-    let mut cfg = cmake::Config::new(TON_MONOREPO_DIR);
-    let mut dst = cfg
+fn build_emulator() {
+    let mut cfg = Config::new(TON_MONOREPO_DIR);
+    let dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-Wno-dev")
         .configure_arg("-Wno-unused")
@@ -287,11 +287,9 @@ fn build_emulator(march: &str) {
         .always_configure(true)
         .very_verbose(false);
 
-    if !march.is_empty() {
-        dst = dst
-            .configure_arg(format!("-DCMAKE_C_FLAGS=-march={}", march))
-            .configure_arg(format!("-DCMAKE_CXX_FLAGS=-march={}", march));
-    }
+    #[cfg(feature = "no_avx512")]
+    disable_avx512_for_clang(dst);
+
     let dst = dst.build();
 
     println!("cargo:rustc-link-lib=dylib=sodium");
@@ -306,4 +304,19 @@ fn build_emulator(march: &str) {
 #[cfg(feature = "shared-tonlib")]
 fn build() {
     println!("cargo:rustc-link-lib=tonlibjson.0.5");
+}
+
+#[cfg(feature = "no_avx512")]
+fn disable_avx512_for_clang(dst: &mut Config) -> &mut Config {
+    dst
+    .define("CMAKE_C_FLAGS", "-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
+    .define("CMAKE_CXX_FLAGS", "-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
+    .define("CMAKE_C_FLAGS_RELEASE", "-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
+    .define("CMAKE_CXX_FLAGS_RELEASE", "-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
+    .asmflag("-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
+}
+
+#[cfg(feature = "no_avx512")]
+fn disable_avx512_for_rustc() {
+    println!("cargo:rustc-env=RUSTFLAGS=-C target-feature=-avx512f,-avx512dq,-avx512cd,-avx512bw,-avx512vl,-avx512ifma,-avx512vbmi,-vpclmulqdq");
 }
