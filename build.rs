@@ -152,7 +152,7 @@ fn build_tonlibjson() {
         .very_verbose(false);
 
     #[cfg(feature = "no_avx512")]
-    disable_avx512_for_clang(dst);
+    disable_avx512_for_gcc(dst);
 
     if cfg!(target_os = "macos") {
         let brew_prefix_output = Command::new("brew").arg("--prefix").output().unwrap();
@@ -288,7 +288,7 @@ fn build_emulator() {
         .very_verbose(false);
 
     #[cfg(feature = "no_avx512")]
-    disable_avx512_for_clang(dst);
+    disable_avx512_for_gcc(dst);
 
     let dst = dst.build();
 
@@ -306,13 +306,14 @@ fn build() {
     println!("cargo:rustc-link-lib=tonlibjson.0.5");
 }
 
+// for clang we just ignore unknown instructions
 #[cfg(feature = "no_avx512")]
-fn disable_avx512_for_clang(dst: &mut Config) -> &mut Config {
+fn disable_avx512_for_gcc(dst: &mut Config) -> &mut Config {
     dst
-    .define("CMAKE_C_FLAGS", "-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
-    .define("CMAKE_CXX_FLAGS", "-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
-    .define("CMAKE_C_FLAGS_RELEASE", "-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
-    .define("CMAKE_CXX_FLAGS_RELEASE", "-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
+    .define("CMAKE_C_FLAGS", "-Wno-error=unused-command-line-argument -mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
+    .define("CMAKE_CXX_FLAGS", "-Wno-error=unused-command-line-argument -mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
+    .define("CMAKE_C_FLAGS_RELEASE", "-Wno-error=unused-command-line-argument -mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
+    .define("CMAKE_CXX_FLAGS_RELEASE", "-Wno-error=unused-command-line-argument -mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
     .asmflag("-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
 }
 
