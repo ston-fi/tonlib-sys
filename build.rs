@@ -309,12 +309,17 @@ fn build() {
 // for clang we just ignore unknown instructions
 #[cfg(feature = "no_avx512")]
 fn disable_avx512_for_gcc(dst: &mut Config) -> &mut Config {
-    dst
-    .define("CMAKE_C_FLAGS", "-Wno-error=unused-command-line-argument -mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
-    .define("CMAKE_CXX_FLAGS", "-Wno-error=unused-command-line-argument -mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
-    .define("CMAKE_C_FLAGS_RELEASE", "-Wno-error=unused-command-line-argument -mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
-    .define("CMAKE_CXX_FLAGS_RELEASE", "-Wno-error=unused-command-line-argument -mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
-    .asmflag("-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq")
+    let disable_avx512 = "-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq";
+    let compiler_flags = format!("-Wno-unused-command-line-argument {}", disable_avx512);
+    for flag in &[
+        "CMAKE_C_FLAGS",
+        "CMAKE_CXX_FLAGS",
+        "CMAKE_C_FLAGS_RELEASE",
+        "CMAKE_CXX_FLAGS_RELEASE",
+    ] {
+        dst.define(flag, compiler_flags.as_str());
+    }
+    dst.asmflag(disable_avx512)
 }
 
 #[cfg(feature = "no_avx512")]
