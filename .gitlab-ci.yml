@@ -56,6 +56,7 @@ test-mr:
     - cargo test --lib -- --test-threads=1
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  interruptible: true
 
 test-mr-no-avx:
   tags:
@@ -67,6 +68,39 @@ test-mr-no-avx:
   rules:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
   allow_failure: true
+  interruptible: true
+
+.test-mr-arm-m3:
+  tags:
+    - arm_m3
+  stage: test
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  when: manual
+  allow_failure: true
+  cache:
+    key: arm-m3-cache
+    paths:
+      - target/
+      - .cargo/
+  variables:
+    TARGET_CPU_MARCH: ""
+    RUSTFLAGS: "-D warnings"
+  interruptible: true
+
+test-mr-arm-m3:
+  extends: .test-mr-arm-m3
+  script:
+    - clang --version
+    - cargo build
+  when: always
+
+test-mr-arm-m3-no-avx:
+  extends: .test-mr-arm-m3
+  script:
+    - clang --version
+    - cargo build --features no_avx512
+
 
 test-master:
   tags:
