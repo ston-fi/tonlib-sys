@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
 use std::thread::available_parallelism;
@@ -68,56 +69,34 @@ fn build() {
     }
 
     if cfg!(target_os = "macos") {
-        // OpenSSL
-        let openssl_installed = Command::new("brew")
-            .args(["--prefix", "openssl@3"])
-            .output()
-            .unwrap();
-        if !openssl_installed.status.success() {
-            panic!("OpenSSL is not installed. To install: `brew install openssl`");
+        if Command::new("brew").args(["-h"]).output().is_err() {
+            panic!("brew is not available. Please install it to proceed");
         }
-        let openssl = std::str::from_utf8(openssl_installed.stdout.as_slice())
-            .unwrap()
-            .trim();
-
-        // lz4
-        let lz4_installed = Command::new("brew").args(["list", "lz4"]).output().unwrap();
-        if !lz4_installed.status.success() {
-            panic!("liblz4 is not installed. To install: `brew install lz4`");
-        }
-
-        // pkgconfig
-        let pkgconfig_installed = Command::new("brew")
-            .args(["list", "pkgconfig"])
-            .output()
-            .unwrap();
-        if !pkgconfig_installed.status.success() {
-            panic!("pkg-config is not installed. To install: `brew install pkgconfig`");
+        let mut dep_paths = HashMap::new();
+        for dep in &["openssl@3", "lz4", "pkgconfig", "libsodium", "secp256k1"] {
+            let dep_installed = Command::new("brew")
+                .args(["--prefix", dep])
+                .output()
+                .unwrap();
+            if !dep_installed.status.success() {
+                panic!(
+                    "{} is not installed. To install: `brew install {}`",
+                    dep, dep
+                );
+            } else {
+                dep_paths.insert(
+                    dep.to_string(),
+                    std::str::from_utf8(dep_installed.stdout.as_slice())
+                        .unwrap()
+                        .trim()
+                        .to_string(),
+                );
+            }
         }
 
-        // libsodium
-        let libsodium_installed = Command::new("brew")
-            .args(["--prefix", "libsodium"])
-            .output()
-            .unwrap();
-        if !libsodium_installed.status.success() {
-            panic!("libsodium is not installed. To install: `brew install libsodium`");
-        }
-        let libsodium = std::str::from_utf8(libsodium_installed.stdout.as_slice())
-            .unwrap()
-            .trim();
-
-        // secp256k1
-        let secp256k1_installed = Command::new("brew")
-            .args(["--prefix", "secp256k1"])
-            .output()
-            .unwrap();
-        if !secp256k1_installed.status.success() {
-            panic!("secp256k1 is not installed. To install: `brew install secp256k1`");
-        }
-        let secp256k1 = std::str::from_utf8(secp256k1_installed.stdout.as_slice())
-            .unwrap()
-            .trim();
+        let openssl = &dep_paths["openssl@3"];
+        let libsodium = &dep_paths["libsodium"];
+        let secp256k1 = &dep_paths["secp256k1"];
 
         env::set_var("OPENSSL_ROOT_DIR", openssl);
         env::set_var("OPENSSL_INCLUDE_DIR", format!("{openssl}/include"));
