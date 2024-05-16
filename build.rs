@@ -20,7 +20,6 @@ fn build() {
     env::set_var("TON_MONOREPO_REVISION", TON_MONOREPO_REVISION);
     println!("cargo:rerun-if-env-changed=TON_MONOREPO_REVISION");
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=src");
 
     // cleanup tonlib after previous build
     if Path::new(TON_MONOREPO_DIR).exists() {
