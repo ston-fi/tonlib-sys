@@ -125,16 +125,15 @@ extern "C" {
     ) -> *const std::os::raw::c_char;
 
     /**
-     * @brief Emulate transaction
+     * @brief Emulate tick tock transaction
      * @param transaction_emulator Pointer to TransactionEmulator object
-     * @param shard_account_boc Base64 encoded BoC serialized ShardAccount
-     * @param message_boc Base64 encoded BoC serialized inbound Message (internal or external)
+     * @param shard_account_boc Base64 encoded BoC serialized ShardAccount of special account
+     * @param is_tock True for tock transactions, false for tick
      * @return Json object with error:
      * {
      *   "success": false,
      *   "error": "Error description",
-     *   "external_not_accepted": false,
-     *   // and optional fields "vm_exit_code", "vm_log", "elapsed_time" in case external message was not accepted.
+     *   "external_not_accepted": false
      * }
      * Or success:
      * {
