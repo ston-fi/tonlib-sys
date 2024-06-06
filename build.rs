@@ -9,7 +9,7 @@ fn main() {
     build();
 }
 
-const TON_MONOREPO_REVISION: &str = "25f61dff161b9c76dce0fc62dc51da911a208b68";
+const TON_MONOREPO_REVISION: &str = "4cfe1d1a96acf956e28e2bbc696a143489e23631";
 const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(not(feature = "shared-tonlib"))]
@@ -30,7 +30,7 @@ fn build() {
         .args([
             "clone",
             "--branch",
-            "testnet",
+            "v2024.04",
             "--depth",
             "1",                    // get only the latest commit
             "--recurse-submodules", // clone submodules as well
