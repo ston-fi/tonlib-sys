@@ -3,6 +3,7 @@
 ton/
 /Cargo.lock
 /.cargo
+/release.sh
 
 # Editors
 .DS_Store
