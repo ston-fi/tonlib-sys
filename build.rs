@@ -15,6 +15,11 @@ const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
+    #[cfg(feature = "with_debug_info")]
+    let cmake_build_type = "Debug";
+    #[cfg(not(feature = "with_debug_info"))]
+    let cmake_build_type = "Release";
+
     #[cfg(feature = "no_avx512")]
     disable_avx512_for_rustc();
     env::set_var("TON_MONOREPO_REVISION", TON_MONOREPO_REVISION);
@@ -108,11 +113,11 @@ fn build() {
     }
 
     env::set_var("LD_LIBRARY_PATH", "lib/x86_64-linux-gnu");
-    build_tonlibjson();
-    build_emulator();
+    build_tonlibjson(cmake_build_type);
+    build_emulator(cmake_build_type);
 }
 
-fn build_tonlibjson() {
+fn build_tonlibjson(cmake_build_type: &str) {
     let mut cfg = Config::new(TON_MONOREPO_DIR);
     let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
@@ -120,7 +125,7 @@ fn build_tonlibjson() {
         .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .define("PORTABLE", "1")
-        .define("CMAKE_BUILD_TYPE", "Release")
+        .define("CMAKE_BUILD_TYPE", cmake_build_type)
         // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
         .build_arg("-j")
         .build_arg(available_parallelism().unwrap().get().to_string())
@@ -248,7 +253,7 @@ fn build_tonlibjson() {
     println!("cargo:rustc-link-lib=static=tonlibjson_private");
 }
 
-fn build_emulator() {
+fn build_emulator(cmake_build_type: &str) {
     let mut cfg = Config::new(TON_MONOREPO_DIR);
     let dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
@@ -257,7 +262,7 @@ fn build_emulator() {
         .configure_arg("-Wno-maybe-uninitialized")
         .configure_arg("-Wno-deprecated-declarations")
         .define("PORTABLE", "1")
-        .define("CMAKE_BUILD_TYPE", "Release")
+        .define("CMAKE_BUILD_TYPE", cmake_build_type)
         // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
         .build_arg("-j")
         .build_arg(available_parallelism().unwrap().get().to_string())
