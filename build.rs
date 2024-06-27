@@ -10,7 +10,7 @@ fn main() {
     build();
 }
 
-const TON_MONOREPO_REVISION: &str = "testnet";
+const TON_MONOREPO_REVISION: &str = "38fc1d5456cb16864668535ac6c4d6ba8fde9cbc";
 const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(not(feature = "shared-tonlib"))]
@@ -45,24 +45,45 @@ fn build() {
         ])
         .status()
         .unwrap();
-    if clone_status.success() {
-        let checkout_status = Command::new("git")
+
+    let checkout_status = if clone_status.success() {
+        Command::new("git")
             .current_dir(TON_MONOREPO_DIR)
             .args(["checkout", TON_MONOREPO_DIR])
             .status()
+            .unwrap()
+    } else {
+        // fallback to clone entire repo and then checkout desired commit
+        let full_clone_status = Command::new("git")
+            .args([
+                "clone",
+                "--recurse-submodules", // clone submodules as well
+                "--shallow-submodules", // get only the latest commit of submodules
+                "https://github.com/ton-blockchain/ton",
+                TON_MONOREPO_DIR,
+            ])
+            .status()
             .unwrap();
 
-        if checkout_status.success() {
-            println!("Cloned and checked out specific commit successfully!");
+        if full_clone_status.success() {
+            println!("Cloned repository successfully!");
         } else {
-            println!("Failed to checkout specific commit!");
+            panic!("Failed to clone repository!");
         }
+
+        Command::new("git")
+        .current_dir(TON_MONOREPO_DIR)
+            .args(["checkout", TON_MONOREPO_REVISION])
+            .status()
+            .unwrap()
+    };
+
+    if checkout_status.success() {
+        println!("Cloned and checked out specific commit successfully!");
     } else {
-        println!("Failed to clone repository!");
+        panic!("Failed to checkout specific commit!");
     }
-    if !clone_status.success() {
-        panic!("Git clone TON repo fail");
-    }
+
     let update_submodules_status = Command::new("git")
         .current_dir(TON_MONOREPO_DIR)
         .args(["submodule", "update", "--init", "--recursive"])
