@@ -46,13 +46,7 @@ fn build() {
         .status()
         .unwrap();
 
-    let checkout_status = if clone_status.success() {
-        Command::new("git")
-            .current_dir(TON_MONOREPO_DIR)
-            .args(["checkout", TON_MONOREPO_REVISION])
-            .status()
-            .unwrap()
-    } else {
+    if !clone_status.success() {
         // fallback to clone entire repo and then checkout desired commit
         let full_clone_status = Command::new("git")
             .args([
@@ -70,13 +64,13 @@ fn build() {
         } else {
             panic!("Failed to clone repository!");
         }
-
-        Command::new("git")
-        .current_dir(TON_MONOREPO_DIR)
-            .args(["checkout", TON_MONOREPO_REVISION])
-            .status()
-            .unwrap()
     };
+
+    let checkout_status = Command::new("git")
+        .current_dir(TON_MONOREPO_DIR)
+        .args(["checkout", TON_MONOREPO_REVISION])
+        .status()
+        .unwrap();
 
     if checkout_status.success() {
         println!("Cloned and checked out specific commit successfully!");
