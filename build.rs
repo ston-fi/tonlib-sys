@@ -49,7 +49,7 @@ fn build() {
     let checkout_status = if clone_status.success() {
         Command::new("git")
             .current_dir(TON_MONOREPO_DIR)
-            .args(["checkout", TON_MONOREPO_DIR])
+            .args(["checkout", TON_MONOREPO_REVISION])
             .status()
             .unwrap()
     } else {
