@@ -13,7 +13,7 @@ To use this library in your Rust application, add the following to your Cargo.to
 
 ```toml
 [dependencies]
-tonlib-sys = "2024.6"
+tonlib-sys = "2024.8"
 ```
 
 Then, in your Rust code, you can import the library with:

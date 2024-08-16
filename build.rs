@@ -10,7 +10,7 @@ fn main() {
     build();
 }
 
-const TON_MONOREPO_REVISION: &str = "38fc1d5456cb16864668535ac6c4d6ba8fde9cbc";
+const TON_MONOREPO_REVISION: &str = "v2024.08";
 const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(not(feature = "shared-tonlib"))]
