@@ -10,7 +10,8 @@ fn main() {
     build();
 }
 
-const TON_MONOREPO_REVISION: &str = "simulate-bundle";
+const TON_MONOREPO_REVISION: &str = "MEV-52-simulate-bundle";
+//const TON_MONOREPO_REVISION: &str = "master";
 const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(not(feature = "shared-tonlib"))]
@@ -26,7 +27,9 @@ fn build() {
     println!("cargo:rerun-if-env-changed=TON_MONOREPO_REVISION");
     println!("cargo:rerun-if-changed=build.rs");
 
+
     // cleanup tonlib after previous build
+
     if Path::new(TON_MONOREPO_DIR).exists() {
         let _ = fs::remove_dir_all(TON_MONOREPO_DIR);
     }
@@ -126,6 +129,7 @@ fn build() {
         println!("cargo:rustc-link-search=native={libsodium}/lib");
         println!("cargo:rustc-link-search=native={secp256k1}/lib");
     }
+
 
     env::set_var("LD_LIBRARY_PATH", "lib/x86_64-linux-gnu");
     build_tonlibjson(cmake_build_type);
