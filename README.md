@@ -1,6 +1,7 @@
 # Rust Bindings for tonlibjson Library
 
 This repository contains the Rust bindings for tonlib library (https://github.com/ton-blockchain/ton), allowing developers to use tonlib functionality in their Rust applications.
+Starting from version 2024.6.1, this project depends on a forked version of ton instead of the original  (https://github.com/ston-fi/ton). This change was made to address urgent fixes and potential future needs.
 
 ## Features
 * Uses Cmake to build tonlibjson_static by default.
