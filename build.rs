@@ -10,7 +10,7 @@ fn main() {
     build();
 }
 
-const TON_MONOREPO_REVISION: &str = "v2024.08";
+const TON_MONOREPO_REVISION: &str = "v2024.09";
 const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(not(feature = "shared-tonlib"))]
@@ -40,7 +40,7 @@ fn build() {
             "1",                    // get only the latest commit
             "--recurse-submodules", // clone submodules as well
             "--shallow-submodules", // get only the latest commit of submodules
-            "https://github.com/ton-blockchain/ton",
+            "https://github.com/ston-fi/ton",
             TON_MONOREPO_DIR,
         ])
         .status()
@@ -53,7 +53,7 @@ fn build() {
                 "clone",
                 "--recurse-submodules", // clone submodules as well
                 "--shallow-submodules", // get only the latest commit of submodules
-                "https://github.com/ton-blockchain/ton",
+                "https://github.com/ston-fi/ton",
                 TON_MONOREPO_DIR,
             ])
             .status()
