@@ -144,6 +144,7 @@ fn build_tonlibjson(cmake_build_type: &str) {
         // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
         .build_arg("-j")
         .build_arg(available_parallelism().unwrap().get().to_string())
+        .build_arg("-fno-rtti ")
         .configure_arg("-Wno-dev")
         .build_target("tonlibjson")
         .always_configure(true)
@@ -281,6 +282,7 @@ fn build_emulator(cmake_build_type: &str) {
         // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
         .build_arg("-j")
         .build_arg(available_parallelism().unwrap().get().to_string())
+        .build_arg("-fno-rtti ")
         .build_target("emulator")
         .always_configure(true)
         .very_verbose(false);
