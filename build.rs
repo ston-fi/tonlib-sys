@@ -10,11 +10,8 @@ fn main() {
     build();
 }
 
-const TON_MONOREPO_REVISION: &str = "v2024.09";
+const TON_MONOREPO_REVISION: &str = "v2024.10";
 const TON_MONOREPO_DIR: &str = "./ton";
-
-
-
 
 #[cfg(not(feature = "shared-tonlib"))]
 fn build() {
@@ -29,66 +26,66 @@ fn build() {
     println!("cargo:rerun-if-env-changed=TON_MONOREPO_REVISION");
     println!("cargo:rerun-if-changed=build.rs");
 
-    // cleanup tonlib after previous build
-    if Path::new(TON_MONOREPO_DIR).exists() {
-        let _ = fs::remove_dir_all(TON_MONOREPO_DIR);
-    }
+    // // cleanup tonlib after previous build
+    // if Path::new(TON_MONOREPO_DIR).exists() {
+    //     let _ = fs::remove_dir_all(TON_MONOREPO_DIR);
+    // }
 
-    let clone_status = Command::new("git")
-        .args([
-            "clone",
-            "--branch",
-            TON_MONOREPO_REVISION,
-            "--depth",
-            "1",                    // get only the latest commit
-            "--recurse-submodules", // clone submodules as well
-            "--shallow-submodules", // get only the latest commit of submodules
-            "https://github.com/ston-fi/ton",
-            TON_MONOREPO_DIR,
-        ])
-        .status()
-        .unwrap();
+    // let clone_status = Command::new("git")
+    //     .args([
+    //         "clone",
+    //         "--branch",
+    //         TON_MONOREPO_REVISION,
+    //         "--depth",
+    //         "1",                    // get only the latest commit
+    //         "--recurse-submodules", // clone submodules as well
+    //         "--shallow-submodules", // get only the latest commit of submodules
+    //         "https://github.com/ston-fi/ton",
+    //         TON_MONOREPO_DIR,
+    //     ])
+    //     .status()
+    //     .unwrap();
 
-    if !clone_status.success() {
-        // fallback to clone entire repo and then checkout desired commit
-        let full_clone_status = Command::new("git")
-            .args([
-                "clone",
-                "--recurse-submodules", // clone submodules as well
-                "--shallow-submodules", // get only the latest commit of submodules
-                "https://github.com/ston-fi/ton",
-                TON_MONOREPO_DIR,
-            ])
-            .status()
-            .unwrap();
+    // if !clone_status.success() {
+    //     // fallback to clone entire repo and then checkout desired commit
+    //     let full_clone_status = Command::new("git")
+    //         .args([
+    //             "clone",
+    //             "--recurse-submodules", // clone submodules as well
+    //             "--shallow-submodules", // get only the latest commit of submodules
+    //             "https://github.com/ston-fi/ton",
+    //             TON_MONOREPO_DIR,
+    //         ])
+    //         .status()
+    //         .unwrap();
 
-        if full_clone_status.success() {
-            println!("Cloned repository successfully!");
-        } else {
-            panic!("Failed to clone repository!");
-        }
-    };
+    //     if full_clone_status.success() {
+    //         println!("Cloned repository successfully!");
+    //     } else {
+    //         panic!("Failed to clone repository!");
+    //     }
+    // };
 
-    let checkout_status = Command::new("git")
-        .current_dir(TON_MONOREPO_DIR)
-        .args(["checkout", TON_MONOREPO_REVISION])
-        .status()
-        .unwrap();
+    // let checkout_status = Command::new("git")
+    //     .current_dir(TON_MONOREPO_DIR)
+    //     .args(["checkout", TON_MONOREPO_REVISION])
+    //     .status()
+    //     .unwrap();
 
-    if checkout_status.success() {
-        println!("Cloned and checked out specific commit successfully!");
-    } else {
-        panic!("Failed to checkout specific commit!");
-    }
+    // if checkout_status.success() {
+    //     println!("Cloned and checked out specific commit successfully!");
+    // } else {
+    //     panic!("Failed to checkout specific commit!");
+    // }
 
-    let update_submodules_status = Command::new("git")
-        .current_dir(TON_MONOREPO_DIR)
-        .args(["submodule", "update", "--init", "--recursive"])
-        .status()
-        .unwrap();
-    if !update_submodules_status.success() {
-        panic!("Git update submodules for TON repo fail");
-    }
+    // let update_submodules_status = Command::new("git")
+    //     .current_dir(TON_MONOREPO_DIR)
+    //     .args(["submodule", "update", "--init", "--recursive"])
+    //     .status()
+    //     .unwrap();
+    // if !update_submodules_status.success() {
+    //     panic!("Git update submodules for TON repo fail");
+    // }
 
     if cfg!(target_os = "macos") {
         if Command::new("brew").args(["-h"]).output().is_err() {
@@ -138,13 +135,13 @@ fn build() {
 fn build_tonlibjson(cmake_build_type: &str) {
     let mut cfg = Config::new(TON_MONOREPO_DIR);
     let mut dst = cfg
-        .configure_arg("-DTON_ONLY_TONLIB=true")
+        .configure_arg("-DTON_ONLY_TONLIB=false")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
-        .define("TON_ONLY_TONLIB", "ON")
+        .define("TON_ONLY_TONLIB", "OOFF")
         .define("BUILD_SHARED_LIBS", "OFF")
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", cmake_build_type)
-       // .define("_GLIBCXX_USE_CXX11_ABI", "1")
+        .define("_GLIBCXX_USE_CXX11_ABI", "1")
         // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
         .build_arg("-j")
         .build_arg(available_parallelism().unwrap().get().to_string())
@@ -165,13 +162,64 @@ fn build_tonlibjson(cmake_build_type: &str) {
 
     let dst = dst.build();
 
-  //  println!("cargo:rustc-cdylib-link-arg={}", "-std=c++20");
-
     println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
     println!("cargo:rustc-link-search=native=/usr/include");
     println!("cargo:rustc-link-search=native=/lib/x86_64-linux-gnu");
+
+    if cfg!(target_os = "macos") {
+        println!("cargo:rustc-link-lib=dylib=c++");
+        println!("cargo:rustc-link-arg=-lc++");
+    } else if cfg!(target_os = "linux") {
+        println!("cargo:rustc-link-lib=dylib=stdc++");
+        println!("cargo:rustc-link-arg=-lstdc++");
+    }
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/keys",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=keys");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/lite-client",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=lite-client-common");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/adnl",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=adnllite");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdactor",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdactor");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdutils",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdutils");
+
     println!("cargo:rustc-link-lib=dylib=sodium");
     println!("cargo:rustc-link-lib=dylib=secp256k1");
+
+    println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
+    println!("cargo:rustc-link-lib=static=tl_lite_api");
+    println!("cargo:rustc-link-lib=static=tl_api");
+    println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
+    println!("cargo:rustc-link-lib=static=tl_tonlib_api");
+
+
+    
+    println!(
+        "cargo:rustc-link-search=native={}/build/keys",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=keys");
 
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
@@ -192,23 +240,11 @@ fn build_tonlibjson(cmake_build_type: &str) {
     println!("cargo:rustc-link-lib=static=tdnet");
 
     println!(
-        "cargo:rustc-link-search=native={}/build/keys",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=keys");
-
-    println!(
         "cargo:rustc-link-search=native={}/build/tl-utils",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=tl-utils");
     println!("cargo:rustc-link-lib=static=tl-lite-utils");
-
-    println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
-    println!("cargo:rustc-link-lib=static=tl_lite_api");
-    println!("cargo:rustc-link-lib=static=tl_api");
-    println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
-    println!("cargo:rustc-link-lib=static=tl_tonlib_api");
 
     println!(
         "cargo:rustc-link-search=native={}/build/crypto",
@@ -226,18 +262,6 @@ fn build_tonlibjson(cmake_build_type: &str) {
     println!("cargo:rustc-link-lib=static=tddb_utils");
 
     println!(
-        "cargo:rustc-link-search=native={}/build/tdactor",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=tdactor");
-
-    println!(
-        "cargo:rustc-link-search=native={}/build/tdutils",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=tdutils");
-
-    println!(
         "cargo:rustc-link-search=native={}/build/third-party/crc32c",
         dst.display()
     );
@@ -249,15 +273,9 @@ fn build_tonlibjson(cmake_build_type: &str) {
     );
     println!("cargo:rustc-link-lib=static=blst");
 
-    println!("cargo:rustc-link-lib=z");
-    println!("cargo:rustc-link-lib=crypto");
-    println!("cargo:rustc-link-lib=dl");
-
-    if cfg!(target_os = "macos") {
-        println!("cargo:rustc-link-lib=dylib=c++");
-    } else {
-        println!("cargo:rustc-link-lib=dylib=stdc++");
-    }
+    println!("cargo:rustc-link-lib=static=z");
+    println!("cargo:rustc-link-lib=static=crypto");
+    println!("cargo:rustc-link-lib=static=dl");
 
     println!(
         "cargo:rustc-link-search=native={}/build/emulator",
@@ -277,20 +295,17 @@ fn build_tonlibjson(cmake_build_type: &str) {
 fn build_emulator(cmake_build_type: &str) {
     let mut cfg = Config::new(TON_MONOREPO_DIR);
     let dst = cfg
-        .configure_arg("-DTON_ONLY_TONLIB=true")
-        .configure_arg("-DBUILD_SHARED_LIBS=false")
-        .configure_arg("-Wno-dev")
-        .configure_arg("-Wno-unused")
-        .configure_arg("-Wno-maybe-uninitialized")
-        .configure_arg("-Wno-deprecated-declarations")
-        .define("TD_POLL_EPOLL", "1")
-        .define("PORTABLE", "1")
-        .define("CMAKE_BUILD_TYPE", cmake_build_type)
-        .define("_GLIBCXX_USE_CXX11_ABI", "1")
-        .define("__linux__", "1")
-        // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
-        .build_arg("-j")
-        .build_arg(available_parallelism().unwrap().get().to_string())
+    .configure_arg("-DTON_ONLY_TONLIB=true")
+    .configure_arg("-DBUILD_SHARED_LIBS=false")
+    .define("TON_ONLY_TONLIB", "ON")
+    .define("BUILD_SHARED_LIBS", "OFF")
+    .define("PORTABLE", "1")
+    .define("CMAKE_BUILD_TYPE", cmake_build_type)
+    .define("_GLIBCXX_USE_CXX11_ABI", "1")
+    // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
+    .build_arg("-j")
+    .build_arg(available_parallelism().unwrap().get().to_string())
+    .configure_arg("-Wno-dev")
         .build_target("emulator")
         .always_configure(true)
         .very_verbose(false);
@@ -300,20 +315,31 @@ fn build_emulator(cmake_build_type: &str) {
 
     let dst = dst.build();
 
-
     if cfg!(target_os = "macos") {
         println!("cargo:rustc-link-lib=dylib=c++");
-    } else {
+        println!("cargo:rustc-link-arg=-lc++");
+    } else if cfg!(target_os = "linux") {
         println!("cargo:rustc-link-lib=dylib=stdc++");
+        println!("cargo:rustc-link-arg=-lstdc++");
     }
+
     println!(
-        "cargo:rustc-link-search=native={}/build/tdutils",
+        "cargo:rustc-link-search=native={}/build/keys",
         dst.display()
     );
-    println!("cargo:rustc-link-lib=static=tdutils");
+    println!("cargo:rustc-link-lib=static=keys");
 
-    println!("cargo:rerun-if-changed={}/build/tdutils", dst.display());
-    println!("cargo:rustc-cdylib-link-arg={}", "-std=c++20");
+    println!(
+        "cargo:rustc-link-search=native={}/build/lite-client",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=lite-client-common");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/adnl",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=adnllite");
 
     println!(
         "cargo:rustc-link-search=native={}/build/tdactor",
@@ -321,11 +347,25 @@ fn build_emulator(cmake_build_type: &str) {
     );
     println!("cargo:rustc-link-lib=static=tdactor");
 
-    // println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdutils",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdutils");
+
+    println!("cargo:rerun-if-changed={}/build/tdutils", dst.display());
+
+    println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
     println!("cargo:rustc-link-lib=static=tl_lite_api");
-    //println!("cargo:rustc-link-lib=static=tl_api");
+    println!("cargo:rustc-link-lib=static=tl_api");
     println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
     println!("cargo:rustc-link-lib=static=tl_tonlib_api");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/keys",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=keys");
 
     println!(
         "cargo:rustc-link-search=native={}/build/crypto",
@@ -337,18 +377,17 @@ fn build_emulator(cmake_build_type: &str) {
     println!("cargo:rustc-link-lib=static=ton_crypto_core");
     println!("cargo:rustc-link-lib=crypto");
 
-
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
         dst.display()
     );
-     println!("cargo:rustc-link-lib=static=lite-client-common");
+    println!("cargo:rustc-link-lib=static=lite-client-common");
 
     println!(
         "cargo:rustc-link-search=native={}/build/tl-utils",
         dst.display()
     );
-    // println!("cargo:rustc-link-lib=static=tl-utils");
+     println!("cargo:rustc-link-lib=static=tl-utils");
     println!("cargo:rustc-link-lib=static=tl-lite-utils");
 
     println!(
@@ -357,35 +396,41 @@ fn build_emulator(cmake_build_type: &str) {
     );
     println!("cargo:rustc-link-lib=static=crc32c");
 
-
     println!(
         "cargo:rustc-link-search=native={}/build/third-party/blst",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=blst");
-
-
-    // println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
-    // println!("cargo:rustc-link-search=native=/usr/include");
-    // println!("cargo:rustc-link-search=native=/lib/x86_64-linux-gnu");
-
-
+    println!("cargo:rustc-link-lib=static=z");
+    println!("cargo:rustc-link-lib=static=crypto");
+    println!("cargo:rustc-link-lib=static=dl");
 
     println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
     println!("cargo:rustc-link-search=native=/usr/include");
     println!("cargo:rustc-link-search=native=/lib/x86_64-linux-gnu");
+
+    println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
+    println!("cargo:rustc-link-search=native=/usr/include");
+    println!("cargo:rustc-link-search=native=/lib/x86_64-linux-gnu");
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdutils",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdutils");
+
     println!("cargo:rustc-link-lib=dylib=secp256k1");
     println!("cargo:rustc-link-lib=dylib=sodium");
 
-
-    println!(
-        "cargo:rustc-link-search=native={}/build/adnl",
-        dst.display()
-    );
-    // println!("cargo:rustc-link-lib=static=adnllite");
-
+    println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
+    println!("cargo:rustc-link-lib=static=tl_lite_api");
+    println!("cargo:rustc-link-lib=static=tl_api");
+    println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
+    println!("cargo:rustc-link-lib=static=tl_tonlib_api");
 
 
+
+
+    println!("cargo:rustc-link-lib=static=blst");
     println!(
         "cargo:rustc-link-search=native={}/build/emulator",
         dst.display()
