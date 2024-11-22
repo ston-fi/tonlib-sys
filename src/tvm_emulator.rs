@@ -1,5 +1,11 @@
 extern "C" {
     /**
+     * @brief Set global verbosity level of the library
+     * @param verbosity_level New verbosity level (0 - never, 1 - error, 2 - warning, 3 - info, 4 - debug)
+     */
+    pub fn emulator_set_verbosity_level(verbosity_level: u32) -> bool;
+
+    /**
      * @brief Create TVM emulator
      * @param code_boc Base64 encoded BoC serialized smart contract code cell
      * @param data_boc Base64 encoded BoC serialized smart contract data cell
