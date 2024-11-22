@@ -141,7 +141,7 @@ fn build_tonlibjson(cmake_build_type: &str) {
         .define("BUILD_SHARED_LIBS", "OFF")
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", cmake_build_type)
-       // .define("_GLIBCXX_USE_CXX11_ABI", "1")
+        // .define("_GLIBCXX_USE_CXX11_ABI", "1")
         // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
         .build_arg("-j")
         .build_arg(available_parallelism().unwrap().get().to_string())
@@ -213,8 +213,6 @@ fn build_tonlibjson(cmake_build_type: &str) {
     println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
     println!("cargo:rustc-link-lib=static=tl_tonlib_api");
 
-
-    
     println!(
         "cargo:rustc-link-search=native={}/build/keys",
         dst.display()
@@ -295,17 +293,17 @@ fn build_tonlibjson(cmake_build_type: &str) {
 fn build_emulator(cmake_build_type: &str) {
     let mut cfg = Config::new(TON_MONOREPO_DIR);
     let dst = cfg
-    .configure_arg("-DTON_ONLY_TONLIB=true")
-    .configure_arg("-DBUILD_SHARED_LIBS=false")
-    .define("TON_ONLY_TONLIB", "ON")
-    .define("BUILD_SHARED_LIBS", "OFF")
-    .define("PORTABLE", "1")
-    .define("CMAKE_BUILD_TYPE", cmake_build_type)
-    // .define("_GLIBCXX_USE_CXX11_ABI", "1")
-    // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
-    .build_arg("-j")
-    .build_arg(available_parallelism().unwrap().get().to_string())
-    .configure_arg("-Wno-dev")
+        .configure_arg("-DTON_ONLY_TONLIB=true")
+        .configure_arg("-DBUILD_SHARED_LIBS=false")
+        .define("TON_ONLY_TONLIB", "ON")
+        .define("BUILD_SHARED_LIBS", "OFF")
+        .define("PORTABLE", "1")
+        .define("CMAKE_BUILD_TYPE", cmake_build_type)
+        // .define("_GLIBCXX_USE_CXX11_ABI", "1")
+        // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
+        .build_arg("-j")
+        .build_arg(available_parallelism().unwrap().get().to_string())
+        .configure_arg("-Wno-dev")
         .build_target("emulator")
         .always_configure(true)
         .very_verbose(false);
@@ -360,7 +358,10 @@ fn build_emulator(cmake_build_type: &str) {
         dst.display()
     );
 
-    println!("cargo:rerun-if-changed={}/build/third-party/abseil-cpp/absl", dst.display());
+    println!(
+        "cargo:rerun-if-changed={}/build/third-party/abseil-cpp/absl",
+        dst.display()
+    );
 
     println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
     println!("cargo:rustc-link-lib=static=tl_lite_api");
@@ -394,7 +395,7 @@ fn build_emulator(cmake_build_type: &str) {
         "cargo:rustc-link-search=native={}/build/tl-utils",
         dst.display()
     );
-     println!("cargo:rustc-link-lib=static=tl-utils");
+    println!("cargo:rustc-link-lib=static=tl-utils");
     println!("cargo:rustc-link-lib=static=tl-lite-utils");
 
     println!(
@@ -433,7 +434,6 @@ fn build_emulator(cmake_build_type: &str) {
     println!("cargo:rustc-link-lib=static=tl_api");
     println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
     println!("cargo:rustc-link-lib=static=tl_tonlib_api");
-
 
     println!(
         "cargo:rustc-link-search=native={}/build/third-party/crc32c",
