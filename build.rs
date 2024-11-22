@@ -135,9 +135,9 @@ fn build() {
 fn build_tonlibjson(cmake_build_type: &str) {
     let mut cfg = Config::new(TON_MONOREPO_DIR);
     let mut dst = cfg
-        .configure_arg("-DTON_ONLY_TONLIB=false")
+        .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
-        .define("TON_ONLY_TONLIB", "OFF")
+        .define("TON_ONLY_TONLIB", "ON")
         .define("BUILD_SHARED_LIBS", "OFF")
         .define("PORTABLE", "1")
         .define("CMAKE_BUILD_TYPE", cmake_build_type)
