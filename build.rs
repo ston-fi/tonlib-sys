@@ -180,45 +180,38 @@ fn build_tonlibjson(cmake_build_type: &str) {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=keys");
-    println!("cargo:rerun-if-changed={}/build/keys", dst.display());
 
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=lite-client-common");
-    println!("cargo:rerun-if-changed={}/build/lite-client", dst.display());
 
     println!(
         "cargo:rustc-link-search=native={}/build/adnl",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=adnllite");
-    println!("cargo:rerun-if-changed={}/build/adnl", dst.display());
 
     println!(
         "cargo:rustc-link-search=native={}/build/tdactor",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=tdactor");
-    println!("cargo:rerun-if-changed={}/build/tdactor", dst.display());
 
     println!(
         "cargo:rustc-link-search=native={}/build/tdutils",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=tdutils");
-    println!("cargo:rerun-if-changed={}/build/tdutils", dst.display());
 
     println!("cargo:rustc-link-lib=dylib=sodium");
     println!("cargo:rustc-link-lib=dylib=secp256k1");
 
-    println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
     println!("cargo:rustc-link-lib=static=tl_lite_api");
     println!("cargo:rustc-link-lib=static=tl_api");
     println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
     println!("cargo:rustc-link-lib=static=tl_tonlib_api");
-    println!("cargo:rerun-if-changed={}/build/tl", dst.display());
 
     println!(
         "cargo:rustc-link-search=native={}/build/tdnet",
@@ -231,7 +224,6 @@ fn build_tonlibjson(cmake_build_type: &str) {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=tl-utils");
-    println!("cargo:rerun-if-changed={}/build/tl-utils", dst.display());
     println!("cargo:rustc-link-lib=static=tl-lite-utils");
 
     println!(
@@ -242,8 +234,6 @@ fn build_tonlibjson(cmake_build_type: &str) {
     println!("cargo:rustc-link-lib=static=ton_block");
     println!("cargo:rustc-link-lib=static=ton_crypto");
     println!("cargo:rustc-link-lib=static=ton_crypto_core");
-
-    println!("cargo:rerun-if-changed={}/build/crypto", dst.display());
 
     println!(
         "cargo:rustc-link-search=native={}/build/tddb",
@@ -256,31 +246,19 @@ fn build_tonlibjson(cmake_build_type: &str) {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=crc32c");
-    println!(
-        "cargo:rerun-if-changed={}/build/third-party/crc32c",
-        dst.display()
-    );
 
     println!(
         "cargo:rustc-link-search=native={}/build/third-party/blst",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=blst");
-    println!(
-        "cargo:rerun-if-changed={}/build/third-party/blst",
-        dst.display()
-    );
-
-    println!("cargo:rustc-link-lib=static=z");
     println!("cargo:rustc-link-lib=static=crypto");
-    println!("cargo:rustc-link-lib=static=dl");
 
     println!(
         "cargo:rustc-link-search=native={}/build/emulator",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=emulator_static");
-    println!("cargo:rerun-if-changed={}/build/emulator", dst.display());
 
     println!(
         "cargo:rustc-link-search=native={}/build/tonlib",
@@ -293,7 +271,7 @@ fn build_tonlibjson(cmake_build_type: &str) {
 
 fn build_emulator(cmake_build_type: &str) {
     let mut cfg = Config::new(TON_MONOREPO_DIR);
-    let dst = cfg
+    let mut dst = cfg
         .configure_arg("-DTON_ONLY_TONLIB=true")
         .configure_arg("-DBUILD_SHARED_LIBS=false")
         .define("TON_ONLY_TONLIB", "ON")
@@ -313,6 +291,13 @@ fn build_emulator(cmake_build_type: &str) {
     #[cfg(feature = "no_avx512")]
     disable_avx512_for_gcc(dst);
 
+    if cfg!(target_os = "macos") {
+        let brew_prefix_output = Command::new("brew").arg("--prefix").output().unwrap();
+        let brew_prefix = String::from_utf8(brew_prefix_output.stdout).unwrap();
+        let lib_arg = format!("-DCMAKE_EXE_LINKER_FLAGS=-L{}/lib", brew_prefix.trim());
+        dst = dst.configure_arg(lib_arg)
+    }
+
     let dst = dst.build();
 
     if cfg!(target_os = "macos") {
@@ -327,21 +312,18 @@ fn build_emulator(cmake_build_type: &str) {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=tdutils");
-    println!("cargo:rerun-if-changed={}/build/tdutils", dst.display());
 
     println!(
         "cargo:rustc-link-search=native={}/build/keys",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=keys");
-    println!("cargo:rerun-if-changed={}/build/keys", dst.display());
 
     println!(
         "cargo:rustc-link-search=native={}/build/lite-client",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=lite-client-common");
-    println!("cargo:rerun-if-changed={}/build/lite-client", dst.display());
 
     println!(
         "cargo:rustc-link-search=native={}/build/adnl",
@@ -361,15 +343,8 @@ fn build_emulator(cmake_build_type: &str) {
     );
     println!("cargo:rustc-link-lib=static=tdutils");
 
-    println!("cargo:rerun-if-changed={}/build/tdutils", dst.display());
-
     println!(
         "cargo:rustc-link-search=native={}/build/third-party/abseil-cpp/absl",
-        dst.display()
-    );
-
-    println!(
-        "cargo:rerun-if-changed={}/build/third-party/abseil-cpp/absl",
         dst.display()
     );
 
@@ -378,7 +353,6 @@ fn build_emulator(cmake_build_type: &str) {
     println!("cargo:rustc-link-lib=static=tl_api");
     println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
     println!("cargo:rustc-link-lib=static=tl_tonlib_api");
-    println!("cargo:rerun-if-changed={}/build/tl", dst.display());
 
     println!(
         "cargo:rustc-link-search=native={}/build/keys",
@@ -414,23 +388,12 @@ fn build_emulator(cmake_build_type: &str) {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=crc32c");
-    println!(
-        "cargo:rerun-if-changed={}/build/third-party/crc32c",
-        dst.display()
-    );
 
     println!(
         "cargo:rustc-link-search=native={}/build/third-party/blst",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=blst");
-    println!(
-        "cargo:rerun-if-changed={}/build/third-party/blst",
-        dst.display()
-    );
-
-    println!("cargo:rustc-link-lib=static=z");
-    println!("cargo:rustc-link-lib=static=dl");
 
     println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
     println!("cargo:rustc-link-search=native=/usr/include");
