@@ -252,7 +252,6 @@ fn build_tonlibjson(cmake_build_type: &str) {
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=blst");
-    println!("cargo:rustc-link-lib=static=crypto");
 
     println!(
         "cargo:rustc-link-search=native={}/build/emulator",
