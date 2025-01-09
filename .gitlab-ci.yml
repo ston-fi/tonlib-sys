@@ -78,6 +78,7 @@ test-mr-no-avx:
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
   when: manual
   allow_failure: true
+  timeout: 30 minutes
   cache:
     key: arm-m3-cache
     paths:
