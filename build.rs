@@ -421,6 +421,9 @@ fn build_emulator(cmake_build_type: &str) {
         "cargo:rustc-link-search=native={}/build/emulator",
         dst.display()
     );
+    // Unlike debian-based distros, when RHEL-like distro is being used,
+    // without obvious linking with libz linking errors are thrown.
+    println!("cargo:rustc-link-lib=dylib=z");
     println!("cargo:rustc-link-lib=static=emulator_static");
     println!("cargo:rustc-link-lib=static=emulator");
 }
