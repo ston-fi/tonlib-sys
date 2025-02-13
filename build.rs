@@ -89,6 +89,20 @@ fn build_tonlibjson(cmake_build_type: &str) {
         .always_configure(false)
         .build();
 
+
+     build_config
+        .define("USE_EMSCRIPTEN", "ON")
+        .build_target("emulator")
+        .always_configure(false)
+        .build();
+
+
+        let dst = build_config
+        .define("USE_EMSCRIPTEN", "OFF")
+        .build_target("tonlibjson")
+        .always_configure(false)
+        .build();
+
     // link native stdlib
     println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
     println!("cargo:rustc-link-search=native=/usr/include");
@@ -102,6 +116,38 @@ fn build_tonlibjson(cmake_build_type: &str) {
         println!("cargo:rustc-link-arg=-lstdc++");
     }
 
+
+
+     println!(
+        "cargo:rustc-link-search=native={}/build/tdutils",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdutils");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/keys",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=keys");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/lite-client",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=lite-client-common");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/adnl",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=adnllite");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdactor",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdactor");
+
     println!(
         "cargo:rustc-link-search=native={}/build/tdutils",
         dst.display()
@@ -109,18 +155,123 @@ fn build_tonlibjson(cmake_build_type: &str) {
     println!("cargo:rustc-link-lib=static=tdutils");
 
     println!(
-        "cargo:rustc-link-search=native={}/build/emulator",
+        "cargo:rustc-link-search=native={}/build/third-party/abseil-cpp/absl",
         dst.display()
     );
-    println!("cargo:rustc-link-lib=emulator_static");
-    println!("cargo:rustc-link-lib=emulator");
+
+    println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
+    println!("cargo:rustc-link-lib=static=tl_lite_api");
+    println!("cargo:rustc-link-lib=static=tl_api");
+    println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
+    println!("cargo:rustc-link-lib=static=tl_tonlib_api");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/keys",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=keys");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/crypto",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=smc-envelope");
+    println!("cargo:rustc-link-lib=static=ton_block");
+    println!("cargo:rustc-link-lib=static=ton_crypto");
+    println!("cargo:rustc-link-lib=static=ton_crypto_core");
+    println!("cargo:rustc-link-lib=static=crypto");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/lite-client",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=lite-client-common");
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/tl-utils",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tl-utils");
+    println!("cargo:rustc-link-lib=static=tl-lite-utils");
+
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/third-party/blst",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=blst");
+
+    println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
+    println!("cargo:rustc-link-search=native=/usr/include");
+    println!("cargo:rustc-link-search=native=/lib/x86_64-linux-gnu");
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdutils",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tdutils");
+
+    println!("cargo:rustc-link-lib=static=secp256k1");
+    println!("cargo:rustc-link-lib=static=sodium");
+
+    println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
+    println!("cargo:rustc-link-lib=static=tl_lite_api");
+    println!("cargo:rustc-link-lib=static=tl_api");
+    println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
+    println!("cargo:rustc-link-lib=static=tl_tonlib_api");
+
 
     println!(
         "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
-    println!("cargo:rustc-link-lib=static=tonlib");
+    // println!("cargo:rustc-link-lib=static=tonlibjson_private");
     println!("cargo:rustc-link-lib=static=tonlibjson");
+
+
+    // println!(
+    //     "cargo:rustc-link-search=native={}/build/third-party/crc32c",
+    //     dst.display()
+    // );
+    // println!("cargo:rustc-link-lib=static=crc32c");
+    println!(
+        "cargo:rustc-link-search=native={}/build/emulator",
+        dst.display()
+    );
+    // Unlike debian-based distros, when RHEL-like distro is being used,
+    // without obvious linking with libz linking errors are thrown.
+    println!("cargo:rustc-link-lib=static=z");
+    println!("cargo:rustc-link-lib=static=emulator_static");
+    println!("cargo:rustc-link-lib=static=emulator");
+
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/tdutils",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=tdutils");
+
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/crypto",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=ton_crypto_core");
+
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/tonlib",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=static=tonlibjson");
+
+
+    println!(
+        "cargo:rustc-link-search=native={}/build/emulator",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=emulator");
+
+
     // // println!("cargo:rustc-link-lib=static=tonlibjson_private");
 }
 
