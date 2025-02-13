@@ -22,7 +22,7 @@ fn build() {
 
     #[cfg(feature = "no_avx512")]
     disable_avx512_for_rustc();
-    checkout();
+    //checkout();
 
     let mut dep_paths = HashMap::new();
 
@@ -39,319 +39,89 @@ fn build() {
     env::set_var("LD_LIBRARY_PATH", "lib/x86_64-linux-gnu");
     build_tonlibjson(cmake_build_type);
 
-    build_emulator(cmake_build_type);
+    // build_emulator(cmake_build_type);
 }
 
 fn build_tonlibjson(cmake_build_type: &str) {
     let mut cfg = Config::new(TON_MONOREPO_DIR);
-    let mut dst = cfg
-        .configure_arg("-DTON_ONLY_TONLIB=true")
-        .configure_arg("-DBUILD_SHARED_LIBS=false")
-        .define("OPENSSL_USE_STATIC_LIBS", "TRUE")
-        .define("TON_ONLY_TONLIB", "OFF")
-        .define("BUILD_SHARED_LIBS", "OFF")
-        .define("PORTABLE", "1")
-        .define("CMAKE_BUILD_TYPE", cmake_build_type)
-        .define("CMAKE_C_FLAGS", "-w")
-        .define("CMAKE_CXX_FLAGS", "-w")
-        // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
-        .build_arg("-j")
-        .build_arg(available_parallelism().unwrap().get().to_string())
-        .configure_arg("-Wno-dev")
-        .build_target("tonlibjson")
-        .always_configure(true)
-        .very_verbose(false);
-
-    #[cfg(feature = "no_avx512")]
-    disable_avx512_for_gcc(dst);
 
     if cfg!(target_os = "macos") {
         let brew_prefix_output = Command::new("brew").arg("--prefix").output().unwrap();
         let brew_prefix = String::from_utf8(brew_prefix_output.stdout).unwrap();
         let lib_arg = format!("-DCMAKE_EXE_LINKER_FLAGS=-L{}/lib", brew_prefix.trim());
-        dst = dst.configure_arg(lib_arg)
+        cfg.configure_arg(lib_arg);
     }
 
-    let dst = dst.build();
+    #[cfg(feature = "no_avx512")]
+    disable_avx512_for_gcc(cfg);
 
-    // println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
-    // println!("cargo:rustc-link-search=native=/usr/include");
-    // println!("cargo:rustc-link-search=native=/lib/x86_64-linux-gnu");
+    let build_config = cfg
+        .define("TON_ONLY_TONLIB", "ON")
+        .define("BUILD_SHARED_LIBS", "ON")
 
-    // if cfg!(target_os = "macos") {
-    //     println!("cargo:rustc-link-lib=dylib=c++");
-    //     println!("cargo:rustc-link-arg=-lc++");
-    // } else if cfg!(target_os = "linux") {
-    //     println!("cargo:rustc-link-lib=dylib=stdc++");
-    //     println!("cargo:rustc-link-arg=-lstdc++");
-    // }
+        // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
+        .build_arg("-j")
+        .build_arg(available_parallelism().unwrap().get().to_string())
+        .configure_arg("-Wno-dev")
+        .very_verbose(false);
 
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/keys",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=keys");
+    // let dst = build_config
+    //     .define("USE_EMSCRIPTEN", "OFF")
+    //     .build_target("tlb_generate_block")
+    //     .always_configure(true)
+    //     .build();
 
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/lite-client",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=lite-client-common");
+    // build_config
+    //     //.define("USE_EMSCRIPTEN", "ON")
+    //     .build_target("emulator")
+    //     .always_configure(false)
+    //     .build();
 
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/adnl",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=adnllite");
+    // build_config
+    //     .define("USE_EMSCRIPTEN", "ON")
+    //     .build_target("tonlib")
+    //     .always_configure(true)
+    //     .build();
 
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/tdactor",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=tdactor");
+    let dst = build_config
+        .define("USE_EMSCRIPTEN", "ON")
+        .build_target("tonlibjson")
+        .always_configure(false)
+        .build();
 
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/tdutils",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=tdutils");
+    // link native stdlib
+    println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
+    println!("cargo:rustc-link-search=native=/usr/include");
+    println!("cargo:rustc-link-search=native=/lib/x86_64-linux-gnu");
 
-    // println!("cargo:rustc-link-lib=dylib=sodium");
-    // println!("cargo:rustc-link-lib=dylib=secp256k1");
-
-    // println!("cargo:rustc-link-lib=static=tl_lite_api");
-    // println!("cargo:rustc-link-lib=static=tl_api");
-    // println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
-    // println!("cargo:rustc-link-lib=static=tl_tonlib_api");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/tdnet",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=tdnet");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/tl-utils",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=tl-utils");
-    // println!("cargo:rustc-link-lib=static=tl-lite-utils");
+    if cfg!(target_os = "macos") {
+        println!("cargo:rustc-link-lib=dylib=c++");
+        println!("cargo:rustc-link-arg=-lc++");
+    } else if cfg!(target_os = "linux") {
+        println!("cargo:rustc-link-lib=dylib=stdc++");
+        println!("cargo:rustc-link-arg=-lstdc++");
+    }
 
     println!(
-        "cargo:rustc-link-search=native={}/build/crypto",
+        "cargo:rustc-link-search=native={}/build/tdutils",
         dst.display()
     );
-    // println!("cargo:rustc-link-lib=static=smc-envelope");
-    // println!("cargo:rustc-link-lib=static=ton_block");
-    // //println!("cargo:rustc-link-lib=static=ton_crypto");
-    // println!("cargo:rustc-link-lib=static=ton_crypto_core");
+    println!("cargo:rustc-link-lib=static=tdutils");
 
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/tddb",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=tddb_utils");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/third-party/crc32c",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=crc32c");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/third-party/blst",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=blst");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/emulator",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=emulator_static");
-
-
-    // println!("cargo:rustc-link-lib=secp256k1");
-    // println!("cargo:rustc-link-lib=sodium");
-    // println!("cargo:rustc-link-lib=crypto");
+    println!(
+        "cargo:rustc-link-search=native={}/build/emulator",
+        dst.display()
+    );
+    println!("cargo:rustc-link-lib=emulator_static");
+    println!("cargo:rustc-link-lib=emulator");
 
     println!(
         "cargo:rustc-link-search=native={}/build/tonlib",
         dst.display()
     );
-    println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=tonlib");
-    println!("cargo:rustc-link-lib=static=tonlibjson_private");
-}
-
-fn build_emulator(cmake_build_type: &str) {
-    let mut cfg = Config::new(TON_MONOREPO_DIR);
-    let mut dst = cfg
-        .configure_arg("-DTON_ONLY_TONLIB=true")
-        .configure_arg("-DBUILD_SHARED_LIBS=true")
-       //.define("OPENSSL_USE_STATIC_LIBS", "1")
-        .define("TON_ONLY_TONLIB", "ON")
-        .define("BUILD_SHARED_LIBS", "ON")
-        .define("PORTABLE", "1")
-        .define("CMAKE_BUILD_TYPE", cmake_build_type)
-        .define("CMAKE_C_FLAGS", "-w")
-        .define("CMAKE_CXX_FLAGS", "-w")
-        // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
-        .build_arg("-j")
-        .build_arg(available_parallelism().unwrap().get().to_string())
-        .configure_arg("-Wno-dev")
-        .build_target("emulator")
-        .always_configure(true)
-        .very_verbose(false);
-
-    #[cfg(feature = "no_avx512")]
-    disable_avx512_for_gcc(dst);
-
-    if cfg!(target_os = "macos") {
-        let brew_prefix_output = Command::new("brew").arg("--prefix").output().unwrap();
-        let brew_prefix = String::from_utf8(brew_prefix_output.stdout).unwrap();
-        let lib_arg = format!("-DCMAKE_EXE_LINKER_FLAGS=-L{}/lib", brew_prefix.trim());
-        dst = dst.configure_arg(lib_arg)
-    }
-
-    let dst = dst.build();
-
-    // if cfg!(target_os = "macos") {
-    //     println!("cargo:rustc-link-lib=dylib=c++");
-    //     println!("cargo:rustc-link-arg=-lc++");
-    // } else if cfg!(target_os = "linux") {
-    //     println!("cargo:rustc-link-lib=dylib=stdc++");
-    //     println!("cargo:rustc-link-arg=-lstdc++");
-    // }
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/tdutils",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=tdutils");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/keys",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=keys");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/lite-client",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=lite-client-common");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/adnl",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=adnllite");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/tdactor",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=tdactor");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/tdutils",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=tdutils");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/third-party/abseil-cpp/absl",
-    //     dst.display()
-    // );
-
-    // // println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
-    // // println!("cargo:rustc-link-lib=static=tl_lite_api");
-    // // println!("cargo:rustc-link-lib=static=tl_api");
-    // // println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
-    // // println!("cargo:rustc-link-lib=static=tl_tonlib_api");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/keys",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=keys");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/crypto",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=smc-envelope");
-    // println!("cargo:rustc-link-lib=static=ton_block");
-    // println!("cargo:rustc-link-lib=static=ton_crypto");
-    // println!("cargo:rustc-link-lib=static=ton_crypto_core");
-    // println!("cargo:rustc-link-lib=static=crypto");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/lite-client",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=lite-client-common");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/tl-utils",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=tl-utils");
-    // println!("cargo:rustc-link-lib=static=tl-lite-utils");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/third-party/crc32c",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=crc32c");
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/third-party/blst",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=blst");
-
-    // println!("cargo:rustc-link-search=native=/usr/lib/x86_64-linux-gnu");
-    // println!("cargo:rustc-link-search=native=/usr/include");
-    // println!("cargo:rustc-link-search=native=/lib/x86_64-linux-gnu");
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/tdutils",
-    //     dst.display()
-    // );
-    // println!("cargo:rustc-link-lib=static=tdutils");
-
-    // println!("cargo:rustc-link-lib=static=secp256k1");
-    // println!("cargo:rustc-link-lib=static=sodium");
-
-    // println!("cargo:rustc-link-search=native={}/build/tl", dst.display());
-    // println!("cargo:rustc-link-lib=static=tl_lite_api");
-    // println!("cargo:rustc-link-lib=static=tl_api");
-    // println!("cargo:rustc-link-lib=static=tl_tonlib_api_json");
-    // println!("cargo:rustc-link-lib=static=tl_tonlib_api");
-
-
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/tonlib",
-    //     dst.display()
-    // );
+    println!("cargo:rustc-link-lib=static=tonlibjson");
     // // println!("cargo:rustc-link-lib=static=tonlibjson_private");
-    // println!("cargo:rustc-link-lib=static=tonlibjson");
-
-
-    // // println!(
-    // //     "cargo:rustc-link-search=native={}/build/third-party/crc32c",
-    // //     dst.display()
-    // // );
-    // // println!("cargo:rustc-link-lib=static=crc32c");
-    // println!(
-    //     "cargo:rustc-link-search=native={}/build/emulator",
-    //     dst.display()
-    // );
-    // // // Unlike debian-based distros, when RHEL-like distro is being used,
-    // // // without obvious linking with libz linking errors are thrown.
-    // // println!("cargo:rustc-link-lib=static=z");
-    // // println!("cargo:rustc-link-lib=static=emulator_static");
-    // println!("cargo:rustc-link-lib=static=emulator");
 }
 
 #[cfg(feature = "shared-tonlib")]
@@ -457,8 +227,7 @@ fn get_pkg_config_paths(deps: &[&str]) -> HashMap<String, String> {
 }
 
 /// Set environment variables and linker flags
-fn 
-set_env_vars(dep_paths: &HashMap<String, String>) {
+fn set_env_vars(dep_paths: &HashMap<String, String>) {
     let openssl = dep_paths
         .get("openssl")
         .or(dep_paths.get("openssl@3"))
@@ -479,8 +248,7 @@ set_env_vars(dep_paths: &HashMap<String, String>) {
     println!("cargo:rustc-link-search=native={}/lib", secp256k1);
 }
 
-
-fn checkout(){
+fn checkout() {
     env::set_var("TON_MONOREPO_REVISION", TON_MONOREPO_REVISION);
     println!("cargo:rerun-if-env-changed=TON_MONOREPO_REVISION");
     println!("cargo:rerun-if-changed=build.rs");
