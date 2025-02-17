@@ -12,7 +12,7 @@ include = [
 ]
 
 [features]
-default = ["cmake"]
+default = ["cmake", "no_avx512"]
 no_avx512 = []
 shared-tonlib = []
 with_debug_info = []
