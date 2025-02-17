@@ -43,12 +43,11 @@ fn build_tonlibjson() {
     let common_build_config = cfg
         .define("CMAKE_BUILD_TYPE", CMAKE_BUILD_TYPE)
         .define("CMAKE_C_FLAGS", "-w")
-
-        .define("CMAKE_CXX_FLAGS", "-w -std=c++17 -D_GLIBCXX_USE_CXX11_ABI=1 -frtti")
-
-        .define("USE_EMSCRIPTEN", "ON")
-        .define("TON_ONLY_TONLIB", "ON")
-        .define("PORTABLE", "1") 
+        .define(
+            "CMAKE_CXX_FLAGS",
+            "-w -std=c++17 -D_GLIBCXX_USE_CXX11_ABI=1",
+        )
+        .define("PORTABLE", "1")
         // multi-thread build used to fail compilation. Please try comment out next 2 lines if you have build errors
         .build_arg("-j")
         .build_arg(available_parallelism().unwrap().get().to_string())
@@ -61,16 +60,36 @@ fn build_tonlibjson() {
     //     .build();
 
     let dst = common_build_config
-        .build_target("emulator")
-        .always_configure(true)
-        .build();
-    let dst = common_build_config
+        .define("USE_EMSCRIPTEN", "ON")
+        .define("TON_ONLY_TONLIB", "ON")
+        .define("CMAKE_SHARED_LINKER_FLAGS", "-static")
         .build_target("tonlib")
         .always_configure(true)
         .build();
+
     let dst = common_build_config
+        .define("USE_EMSCRIPTEN", "ON")
+        .define("TON_ONLY_TONLIB", "ON")
+        // .define("BUILD_SHARED_LIBS", "ON")
+        .define("CMAKE_SHARED_LINKER_FLAGS", "-static")
+        .build_target("tdutils")
+        .always_configure(true)
+        .build();
+
+    let dst = common_build_config
+        .define("USE_EMSCRIPTEN", "ON")
+        .define("TON_ONLY_TONLIB", "ON")
+        // .define("BUILD_SHARED_LIBS", "ON")
+        .define("CMAKE_SHARED_LINKER_FLAGS", "-static")
         .build_target("tonlibjson")
-        .always_configure(true) 
+        .always_configure(true)
+        .build();
+
+    let dst = common_build_config
+        .define("USE_EMSCRIPTEN", "ON")
+        .define("TON_ONLY_TONLIB", "ON")
+        .build_target("emulator")
+        .always_configure(true)
         .build();
 
     // link native stdlib
@@ -86,27 +105,22 @@ fn build_tonlibjson() {
         println!("cargo:rustc-link-arg=-lstdc++");
     }
 
+    // println!(
+    //     "cargo:rustc-link-search=native={}/build/tdutils",
+    //     dst.display()
+    // );
+    // println!("cargo:rustc-link-lib=static=tdutils");
 
-   
-    println!(
-        "cargo:rustc-link-search=native={}/build/tdutils",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=tdutils");
+    // println!(
+    //     "cargo:rustc-link-search=native={}/build/crypto",
+    //     dst.display()
+    // );
+    // println!("cargo:rustc-link-lib=static=ton_crypto");
 
-
-
-    println!(
-        "cargo:rustc-link-search=native={}/build/crypto",
-        dst.display()
-    );
-    println!("cargo:rustc-link-lib=static=ton_crypto");
-
-    println!("cargo:rustc-link-lib=static=ton_crypto_core");
-    println!("cargo:rustc-link-lib=static=ton_block");
-    println!("cargo:rustc-link-lib=static=src_parser");
-    println!("cargo:rustc-link-lib=static=smc-envelope");
-
+    // println!("cargo:rustc-link-lib=static=ton_crypto_core");
+    // println!("cargo:rustc-link-lib=static=ton_block");
+    // println!("cargo:rustc-link-lib=static=src_parser");
+    // println!("cargo:rustc-link-lib=static=smc-envelope");
 
     println!(
         "cargo:rustc-link-search=native={}/build/tonlib",
@@ -115,15 +129,10 @@ fn build_tonlibjson() {
     println!("cargo:rustc-link-lib=static=tonlib");
     println!("cargo:rustc-link-lib=static=tonlibjson");
 
-
     println!(
         "cargo:rustc-link-search=native={}/build/emulator",
         dst.display()
     );
-
-    println!("cargo:rerun-if-changed={}/build/tonlib", dst.display());
-    println!("cargo:rerun-if-changed={}/build/emulator", dst.display());
-    
     println!("cargo:rustc-link-lib=emulator");
     println!("cargo:rustc-link-lib=emulator_static");
 }
