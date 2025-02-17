@@ -1,7 +1,5 @@
 use std::{collections::HashMap, env, process::Command};
 
-
-
 /// Check if Homebrew is installed (macOS)
 fn check_brew() {
     if Command::new("brew").args(["-h"]).output().is_err() {
@@ -78,10 +76,8 @@ fn get_pkg_config_paths(deps: &[&str]) -> HashMap<String, String> {
     paths
 }
 
-
-
 /// Set environment variables and linker flags
-pub (crate) fn set_env_vars() {
+pub(crate) fn set_env_vars() {
     let mut dep_paths = HashMap::new();
     if cfg!(target_os = "macos") {
         check_brew();

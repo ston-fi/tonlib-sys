@@ -5,7 +5,6 @@ Starting from version 2024.6.1, this project depends on a forked version of ton 
 
 ## Features
 * Uses Cmake to build tonlibjson_static by default.
-* Supports shared tonlib. You can build with --features shared-tonlib.
 
 ## Usage
 This library is used in the tonlib-rs library (https://github.com/ston-fi/tonlib-rs), which provides a higher-level Rust interface to the tonlib functionality.

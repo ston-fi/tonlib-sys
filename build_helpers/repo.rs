@@ -1,7 +1,6 @@
 use std::{env, fs, path::Path, process::Command};
 
-
-pub (crate) fn checkout(ton_monorepo_dir: &str) {
+pub(crate) fn checkout(ton_monorepo_dir: &str) {
     const TON_MONOREPO_REVISION: &str = "v2025.02";
 
     env::set_var("TON_MONOREPO_REVISION", TON_MONOREPO_REVISION);
