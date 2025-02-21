@@ -13,8 +13,8 @@ extern "C" {
      * @return Pointer to TVM emulator object
      */
     pub fn tvm_emulator_create(
-        code: *const ::std::os::raw::c_char,
-        data: *const ::std::os::raw::c_char,
+        code: *const std::os::raw::c_char,
+        data: *const std::os::raw::c_char,
         vm_log_verbosity: u32,
     ) -> *mut ::std::os::raw::c_void;
 
@@ -24,8 +24,8 @@ extern "C" {
      * @return true in case of success, false in case of error
      */
     pub fn tvm_emulator_set_libraries(
-        tvm_emulator: *mut ::std::os::raw::c_void,
-        libs_boc: *const ::std::os::raw::c_char,
+        tvm_emulator: *mut std::os::raw::c_void,
+        libs_boc: *const std::os::raw::c_char,
     ) -> bool;
 
     /**
@@ -39,12 +39,12 @@ extern "C" {
      * @return true in case of success, false in case of error
      */
     pub fn tvm_emulator_set_c7(
-        tvm_emulator: *mut ::std::os::raw::c_void,
-        address: *const ::std::os::raw::c_char,
+        tvm_emulator: *mut std::os::raw::c_void,
+        address: *const std::os::raw::c_char,
         unixtime: u32,
         balance: u64,
-        rand_seed_hex: *const ::std::os::raw::c_char,
-        config: *const ::std::os::raw::c_char,
+        rand_seed_hex: *const std::os::raw::c_char,
+        config: *const std::os::raw::c_char,
     ) -> bool;
 
     /**
@@ -54,7 +54,7 @@ extern "C" {
      * @return true in case of success, false in case of error
      */
     pub fn tvm_emulator_set_gas_limit(
-        tvm_emulator: *mut ::std::os::raw::c_void,
+        tvm_emulator: *mut std::os::raw::c_void,
         gas_limit: u64,
     ) -> bool;
 
@@ -65,8 +65,8 @@ extern "C" {
      * @return true in case of success, false in case of error
      */
     pub fn tvm_emulator_set_debug_enabled(
-        tvm_emulator: *mut ::std::os::raw::c_void,
-        debug_enabled: ::std::os::raw::c_int,
+        tvm_emulator: *mut std::os::raw::c_void,
+        debug_enabled: std::os::raw::c_int,
     ) -> bool;
 
     /**
@@ -90,10 +90,10 @@ extern "C" {
      * }
      */
     pub fn tvm_emulator_run_get_method(
-        tvm_emulator: *mut ::std::os::raw::c_void,
+        tvm_emulator: *mut std::os::raw::c_void,
         method_id: i32,
-        stack_boc: *const ::std::os::raw::c_char,
-    ) -> *const ::std::os::raw::c_char;
+        stack_boc: *const std::os::raw::c_char,
+    ) -> *const std::os::raw::c_char;
 
     /**
      * @brief Send external message
@@ -118,8 +118,8 @@ extern "C" {
      * }
      */
     pub fn tvm_emulator_send_external_message(
-        tvm_emulator: *mut ::std::os::raw::c_void,
-        message_body_boc: *const ::std::os::raw::c_char,
+        tvm_emulator: *mut std::os::raw::c_void,
+        message_body_boc: *const std::os::raw::c_char,
     ) -> *const ::std::os::raw::c_char;
 
     /**
@@ -146,8 +146,8 @@ extern "C" {
      * }
      */
     pub fn tvm_emulator_send_internal_message(
-        tvm_emulator: *mut ::std::os::raw::c_void,
-        message_body_boc: *const ::std::os::raw::c_char,
+        tvm_emulator: *mut std::os::raw::c_void,
+        message_body_boc: *const std::os::raw::c_char,
         amount: u64,
     ) -> *const ::std::os::raw::c_char;
 
@@ -155,7 +155,7 @@ extern "C" {
      * @brief Destroy TVM emulator object
      * @param tvm_emulator Pointer to TVM emulator object
      */
-    pub fn tvm_emulator_destroy(tvm_emulator: *mut ::std::os::raw::c_void);
+    pub fn tvm_emulator_destroy(tvm_emulator: *mut std::os::raw::c_void);
 }
 
 #[cfg(test)]
