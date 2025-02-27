@@ -92,14 +92,14 @@ fn build_monorepo() {
     println!("cargo:rustc-link-search=native={build_dir}/build/tdutils");
     println!("cargo:rustc-link-lib=static=tdutils");
     // third-party
-    println!("cargo:rustc-link-search=native={build_dir}/build/third-party/crc32c");
-    println!("cargo:rustc-link-lib=static=crc32c");
     println!("cargo:rustc-link-search=native={build_dir}/build/third-party/blst");
     println!("cargo:rustc-link-lib=static=blst");
     // dynamic libs
     println!("cargo:rustc-link-lib=crypto"); // openssl
     println!("cargo:rustc-link-lib=dylib=sodium");
     println!("cargo:rustc-link-lib=dylib=secp256k1");
+    println!("cargo:rustc-link-search=native={build_dir}/build/third-party/crc32c");
+    println!("cargo:rustc-link-lib=static=crc32c");
 }
 
 fn run_build(target: &str) -> String {
