@@ -127,7 +127,7 @@ fn run_build(target: &str) -> String {
         .always_configure(true)
         .very_verbose(false);
 
-    #[cfg(feature = "no_avx512")]
+    #[cfg(all(feature = "no_avx512", not(target_os = "macos")))]
     disable_avx512_for_gcc(dst);
 
     dst.build().display().to_string()
@@ -230,7 +230,7 @@ fn disable_avx512_for_rustc() {
 }
 
 // for clang we just ignore unknown instructions
-#[cfg(feature = "no_avx512")]
+#[cfg(all(feature = "no_avx512", not(target_os = "macos")))]
 fn disable_avx512_for_gcc(dst: &mut Config) -> &mut Config {
     let disable_avx512 = "-mno-avx512f -mno-avx512dq -mno-avx512cd -mno-avx512bw -mno-avx512vl -mno-avx512ifma -mno-avx512vbmi -mno-vpclmulqdq";
     let compiler_flags = format!("-Wno-unused-command-line-argument {}", disable_avx512);
