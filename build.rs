@@ -5,8 +5,8 @@ use std::process::Command;
 use std::thread::available_parallelism;
 use std::{env, fs};
 
-const TON_MONOREPO_URL: &str = "https://github.com/ston-fi/ton";
-const TON_MONOREPO_REVISION: &str = "v2025.03";
+const TON_MONOREPO_URL: &str = "https://github.com/ton-blockchain/ton";
+const TON_MONOREPO_REVISION: &str = "v2025.3";
 const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(feature = "with_debug_info")]
