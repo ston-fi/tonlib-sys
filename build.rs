@@ -96,6 +96,7 @@ fn build_monorepo() {
     println!("cargo:rustc-link-lib=static=blst");
     // dynamic libs
     println!("cargo:rustc-link-lib=crypto"); // openssl
+    println!("cargo:rustc-link-lib=dylib=z"); // zlib
     println!("cargo:rustc-link-lib=dylib=sodium");
     println!("cargo:rustc-link-lib=dylib=secp256k1");
     println!("cargo:rustc-link-search=native={build_dir}/build/third-party/crc32c");
