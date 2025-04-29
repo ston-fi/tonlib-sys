@@ -5,8 +5,8 @@ use std::process::Command;
 use std::thread::available_parallelism;
 use std::{env, fs};
 
-const TON_MONOREPO_URL: &str = "https://github.com/ston-fi/ton";
-const TON_MONOREPO_REVISION: &str = "v2025.02";
+const TON_MONOREPO_URL: &str = "https://github.com/ton-blockchain/ton";
+const TON_MONOREPO_REVISION: &str = "v2025.03";
 const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(feature = "with_debug_info")]
@@ -96,6 +96,7 @@ fn build_monorepo() {
     println!("cargo:rustc-link-lib=static=blst");
     // dynamic libs
     println!("cargo:rustc-link-lib=crypto"); // openssl
+    println!("cargo:rustc-link-lib=dylib=z"); // zlib
     println!("cargo:rustc-link-lib=dylib=sodium");
     println!("cargo:rustc-link-lib=dylib=secp256k1");
     println!("cargo:rustc-link-search=native={build_dir}/build/third-party/crc32c");
