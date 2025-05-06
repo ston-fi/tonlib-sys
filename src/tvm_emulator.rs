@@ -95,7 +95,6 @@ extern "C" {
         stack_boc: *const std::os::raw::c_char,
     ) -> *const std::os::raw::c_char;
 
-
     /**
      * @brief Run get method with raw params
      * @param len Length of params
