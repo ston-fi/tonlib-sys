@@ -134,7 +134,7 @@ fn run_build(target: &str) -> String {
         .configure_arg("-Wno-dev")
         .build_target(target)
         .always_configure(true)
-        .very_verbose(true);
+        .very_verbose(false);
 
     #[cfg(all(feature = "no_avx512", not(target_os = "macos")))]
     disable_avx512_for_gcc(dst);
