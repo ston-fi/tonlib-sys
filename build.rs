@@ -41,6 +41,9 @@ fn build_monorepo() {
     if cfg!(target_os = "linux") {
         println!("cargo:rustc-link-lib=dylib=stdc++");
         println!("cargo:rustc-link-arg=-lstdc++");
+        println!("cargo:rustc-env=CC=clang");
+        println!("cargo:rustc-env=CXX=clang++");
+        println!("cargo:rustc-env=CMAKE_CXX_STANDARD=17");
     }
 
     env::set_var("LD_LIBRARY_PATH", "lib/x86_64-linux-gnu");
@@ -111,6 +114,11 @@ fn run_build(target: &str) -> String {
     #[cfg(not(target_os = "macos"))]
     const APPLE: &str = "false";
 
+    let mut cxx_flags = "-w";
+    if cfg!(target_os = "linux") {
+        cxx_flags = "-w -std=c++17 --include=algorithm";
+    }
+
     let mut cfg = Config::new(TON_MONOREPO_DIR);
     let dst = cfg
         .define("BUILD_SHARED_LIBS", "false")
@@ -120,13 +128,13 @@ fn run_build(target: &str) -> String {
         .define("APPLE", APPLE)
         .define("CMAKE_BUILD_TYPE", CMAKE_BUILD_TYPE)
         .define("CMAKE_C_FLAGS", "-w")
-        .define("CMAKE_CXX_FLAGS", "-w")
+        .define("CMAKE_CXX_FLAGS", cxx_flags)
         .build_arg("-j")
         .build_arg(available_parallelism().unwrap().get().to_string())
         .configure_arg("-Wno-dev")
         .build_target(target)
         .always_configure(true)
-        .very_verbose(false);
+        .very_verbose(true);
 
     #[cfg(all(feature = "no_avx512", not(target_os = "macos")))]
     disable_avx512_for_gcc(dst);
