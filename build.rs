@@ -119,7 +119,6 @@ fn run_build(target: &str) -> String {
         cxx_flags = "-w -std=c++17 --include=algorithm";
     }
 
-
     let mut cfg = Config::new(TON_MONOREPO_DIR);
     let dst = cfg
         .define("BUILD_SHARED_LIBS", "false")
