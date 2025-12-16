@@ -6,7 +6,7 @@ use std::thread::available_parallelism;
 use std::{env, fs};
 
 const TON_MONOREPO_URL: &str = "https://github.com/ton-blockchain/ton";
-const TON_MONOREPO_REVISION: &str = "v2025.11";
+const TON_MONOREPO_REVISION: &str = "v2025.12";
 const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(feature = "with_debug_info")]
@@ -55,7 +55,6 @@ fn build_monorepo() {
     println!("cargo:rustc-link-search=native={build_dir}/build/tonlib");
     println!("cargo:rustc-link-lib=static=tonlibjson");
     println!("cargo:rustc-link-lib=static=tonlib");
-    println!("cargo:rustc-link-lib=static=tonlibjson_private");
     // lite-client
     println!("cargo:rustc-link-search=native={build_dir}/build/lite-client");
     println!("cargo:rustc-link-lib=static=lite-client-common");
@@ -210,7 +209,7 @@ fn checkout_repo() {
 // replace '  if (NOT USE_EMSCRIPTEN)' by '  if (TRUE)' in ton/crypto/CMakeLists.txt
 fn patch_cmake() {
     let cmake_path = Path::new(TON_MONOREPO_DIR).join("crypto/CMakeLists.txt");
-    let target_line = 428;
+    let target_line = 427;
     let new_line = "  if (TRUE)";
     let file = File::open(&cmake_path).unwrap();
     let reader = BufReader::new(file);
