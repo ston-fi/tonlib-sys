@@ -96,8 +96,16 @@ fn build_monorepo() {
     // third-party
     println!("cargo:rustc-link-search=native={build_dir}/build/third-party/blst");
     println!("cargo:rustc-link-lib=static=blst");
+    // openssl
+    if cfg!(target_os = "linux") {
+        // TON builds its own OpenSSL. Use that on Linux to avoid symbol/version mismatches
+        // with runner-provided system libcrypto.
+        println!("cargo:rustc-link-search=native={build_dir}/build/third-party/openssl/lib");
+        println!("cargo:rustc-link-lib=static=crypto");
+    } else {
+        println!("cargo:rustc-link-lib=crypto");
+    }
     // dynamic libs
-    println!("cargo:rustc-link-lib=crypto"); // openssl
     println!("cargo:rustc-link-lib=dylib=z"); // zlib
     println!("cargo:rustc-link-lib=dylib=sodium");
     println!("cargo:rustc-link-lib=dylib=secp256k1");
