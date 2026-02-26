@@ -6,7 +6,7 @@ use std::thread::available_parallelism;
 use std::{env, fs};
 
 const TON_MONOREPO_URL: &str = "https://github.com/ton-blockchain/ton";
-const TON_MONOREPO_REVISION: &str = "v2025.12";
+const TON_MONOREPO_REVISION: &str = "v2026.02-1";
 const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(feature = "with_debug_info")]
@@ -117,12 +117,21 @@ fn run_build(target: &str) -> String {
     if cfg!(target_os = "linux") {
         cxx_flags = "-w -std=c++17 --include=algorithm";
     }
+    let use_emscripten = env::var("CARGO_CFG_TARGET_ARCH")
+        .map(|arch| arch == "wasm32")
+        .unwrap_or(false);
 
     let mut cfg = Config::new(TON_MONOREPO_DIR);
     let dst = cfg
         .define("BUILD_SHARED_LIBS", "false")
         .define("CMAKE_POSITION_INDEPENDENT_CODE", "ON")
-        .define("USE_EMSCRIPTEN", "true")
+        .define(
+            "USE_EMSCRIPTEN",
+            if use_emscripten { "true" } else { "false" },
+        )
+        .define("TONLIBJSON_STATIC", "ON")
+        .define("EMULATOR_STATIC", "ON")
+        .define("TON_USE_ABSEIL", "OFF")
         // .define("PORTABLE", "true") // statically link system libraries such as libstdc++
         .define("APPLE", APPLE)
         .define("CMAKE_BUILD_TYPE", CMAKE_BUILD_TYPE)
@@ -209,7 +218,7 @@ fn checkout_repo() {
 // replace '  if (NOT USE_EMSCRIPTEN)' by '  if (TRUE)' in ton/crypto/CMakeLists.txt
 fn patch_cmake() {
     let cmake_path = Path::new(TON_MONOREPO_DIR).join("crypto/CMakeLists.txt");
-    let target_line = 427;
+    let target_line = 453;
     let new_line = "  if (TRUE)";
     let file = File::open(&cmake_path).unwrap();
     let reader = BufReader::new(file);
