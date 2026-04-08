@@ -21,3 +21,6 @@ with_debug_info = []
 
 [build-dependencies]
 cmake = { version = "0.1", optional = true }
+fs2 = "0.4"
+dirs = "6.0"
+anyhow = "1.0"
