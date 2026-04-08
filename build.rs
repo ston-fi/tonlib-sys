@@ -6,7 +6,7 @@ use std::thread::available_parallelism;
 use std::{env, fs};
 
 const TON_MONOREPO_URL: &str = "https://github.com/ton-blockchain/ton";
-const TON_MONOREPO_REVISION: &str = "v2026.02-1";
+const TON_MONOREPO_REVISION: &str = "v2026.04";
 const TON_MONOREPO_DIR: &str = "./ton";
 
 #[cfg(feature = "with_debug_info")]
@@ -16,7 +16,7 @@ const CMAKE_BUILD_TYPE: &str = "Release";
 
 fn main() {
     #[cfg(feature = "shared-tonlib")]
-    println!("cargo:rustc-link-lib=tonlibjson.0.5");
+    println!("cargo:rustc-link-lib=tonlibjson");
 
     #[cfg(not(feature = "shared-tonlib"))]
     build_monorepo();
