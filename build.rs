@@ -29,7 +29,7 @@ fn build_monorepo() {
     println!("cargo:rerun-if-env-changed=TON_MONOREPO_REVISION");
     println!("cargo:rerun-if-changed=build.rs");
     checkout_repo();
-    patch_cmake();
+    // patch_cmake();
 
     #[cfg(target_os = "macos")]
     install_macos_deps();
@@ -116,11 +116,6 @@ fn build_monorepo() {
 fn run_build(target: &str) -> String {
     println!("\nBuilding target: {target}...");
 
-    #[cfg(target_os = "macos")]
-    const APPLE: &str = "true";
-    #[cfg(not(target_os = "macos"))]
-    const APPLE: &str = "false";
-
     let mut cxx_flags = "-w";
     if cfg!(target_os = "linux") {
         cxx_flags = "-w -std=c++17 --include=algorithm";
@@ -131,17 +126,14 @@ fn run_build(target: &str) -> String {
 
     let mut cfg = Config::new(TON_MONOREPO_DIR);
     let dst = cfg
-        .define("BUILD_SHARED_LIBS", "false")
-        .define("CMAKE_POSITION_INDEPENDENT_CODE", "ON")
         .define(
             "USE_EMSCRIPTEN",
             if use_emscripten { "true" } else { "false" },
         )
         .define("TONLIBJSON_STATIC", "ON")
         .define("EMULATOR_STATIC", "ON")
-        .define("TON_USE_ABSEIL", "OFF")
+        .define("TON_ONLY_TONLIB", "ON")
         // .define("PORTABLE", "true") // statically link system libraries such as libstdc++
-        .define("APPLE", APPLE)
         .define("CMAKE_BUILD_TYPE", CMAKE_BUILD_TYPE)
         .define("CMAKE_C_FLAGS", "-w")
         .define("CMAKE_CXX_FLAGS", cxx_flags)
@@ -170,9 +162,15 @@ fn checkout_repo() {
             "--branch",
             TON_MONOREPO_REVISION,
             "--depth",
-            "1",                    // get only the latest commit
+            "1", // get only the latest commit
+            "--single-branch",
+            // "--jobs",
+            // "4",
             "--recurse-submodules", // clone submodules as well
             "--shallow-submodules", // get only the latest commit of submodules
+            "--filter",
+            "blob:none",
+            "--also-filter-submodules",
             TON_MONOREPO_URL,
             TON_MONOREPO_DIR,
         ])
@@ -186,6 +184,8 @@ fn checkout_repo() {
                 "clone",
                 "--recurse-submodules", // clone submodules as well
                 "--shallow-submodules", // get only the latest commit of submodules
+                "--filter",
+                "blob:none",
                 TON_MONOREPO_URL,
                 TON_MONOREPO_DIR,
             ])
@@ -218,34 +218,6 @@ fn checkout_repo() {
         .unwrap();
     if !update_submodules_status.success() {
         panic!("Git update submodules for TON repo fail");
-    }
-}
-
-// TODO it's workaround to make v2025.02 works.
-// likely need to be updated after new version of TON
-// replace '  if (NOT USE_EMSCRIPTEN)' by '  if (TRUE)' in ton/crypto/CMakeLists.txt
-fn patch_cmake() {
-    let cmake_path = Path::new(TON_MONOREPO_DIR).join("crypto/CMakeLists.txt");
-    let target_line = 453;
-    let new_line = "  if (TRUE)";
-    let file = File::open(&cmake_path).unwrap();
-    let reader = BufReader::new(file);
-    let mut lines: Vec<String> = reader.lines().collect::<Result<_, _>>().unwrap();
-
-    if target_line >= lines.len() {
-        panic!(
-            "CMakeLists.txt doesn't contains so many lines ({target_line} >= {})",
-            lines.len()
-        );
-    }
-    lines[target_line] = new_line.to_string();
-
-    // write file back
-    use std::fs::File;
-    use std::io::Write;
-    let mut file = File::create(&cmake_path).unwrap();
-    for line in lines {
-        writeln!(file, "{}", line).unwrap();
     }
 }
 
