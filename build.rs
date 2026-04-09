@@ -1,13 +1,17 @@
+use anyhow::bail;
 use cmake::Config;
-use std::io::{BufRead, BufReader};
-use std::path::Path;
+use fs2::FileExt;
+use std::fs::File;
+use std::io::ErrorKind;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::thread::available_parallelism;
+use std::time::Duration;
 use std::{env, fs};
 
 const TON_MONOREPO_URL: &str = "https://github.com/ton-blockchain/ton";
-const TON_MONOREPO_REVISION: &str = "v2026.02-1";
-const TON_MONOREPO_DIR: &str = "./ton";
+const TON_MONOREPO_REVISION: &str = "v2026.04";
+const TON_MONOREPO_DIR_ENV: &str = "TON_MONOREPO_DIR";
 
 #[cfg(feature = "with_debug_info")]
 const CMAKE_BUILD_TYPE: &str = "RelWithDebInfo";
@@ -16,20 +20,29 @@ const CMAKE_BUILD_TYPE: &str = "Release";
 
 fn main() {
     #[cfg(feature = "shared-tonlib")]
-    println!("cargo:rustc-link-lib=tonlibjson.0.5");
+    println!("cargo:rustc-link-lib=tonlibjson");
 
     #[cfg(not(feature = "shared-tonlib"))]
     build_monorepo();
 }
 
 fn build_monorepo() {
+    let monorepo_dir = resolve_monorepo_dir();
+    println!("Using {} folder for TON monorepo", monorepo_dir.display());
+    if let Some(parent_dir) = monorepo_dir.parent() {
+        fs::create_dir_all(parent_dir)
+            .unwrap_or_else(|error| panic!("Failed to create {}: {error}", parent_dir.display()));
+    }
+    let _repo_lock = repo_lock(&monorepo_dir);
+
     #[cfg(feature = "no_avx512")]
     disable_avx512_for_rustc();
     env::set_var("TON_MONOREPO_REVISION", TON_MONOREPO_REVISION);
     println!("cargo:rerun-if-env-changed=TON_MONOREPO_REVISION");
+    println!("cargo:rerun-if-env-changed={TON_MONOREPO_DIR_ENV}");
     println!("cargo:rerun-if-changed=build.rs");
-    checkout_repo();
-    patch_cmake();
+    checkout_repo(&monorepo_dir).unwrap();
+    patch_macos_dsymutil_linker_hook(&monorepo_dir);
 
     #[cfg(target_os = "macos")]
     install_macos_deps();
@@ -43,12 +56,12 @@ fn build_monorepo() {
         println!("cargo:rustc-link-arg=-lstdc++");
         println!("cargo:rustc-env=CC=clang");
         println!("cargo:rustc-env=CXX=clang++");
-        println!("cargo:rustc-env=CMAKE_CXX_STANDARD=17");
+        println!("cargo:rustc-env=CMAKE_CXX_STANDARD=20");
     }
 
     env::set_var("LD_LIBRARY_PATH", "lib/x86_64-linux-gnu");
 
-    let build_dir = run_build("tonlibjson");
+    let build_dir = run_build("tonlibjson", &monorepo_dir);
     // === ORDER DOES MATTER!!! ===
     // === tonlibjson libraries ===
     // tonlib
@@ -78,7 +91,7 @@ fn build_monorepo() {
     println!("cargo:rustc-link-search=native={build_dir}/build/keys");
     println!("cargo:rustc-link-lib=static=keys");
 
-    let build_dir = run_build("emulator");
+    let build_dir = run_build("emulator", &monorepo_dir);
     // === emulator libraries ===
     // emulator
     println!("cargo:rustc-link-search=native={build_dir}/build/emulator");
@@ -113,35 +126,36 @@ fn build_monorepo() {
     println!("cargo:rustc-link-lib=static=crc32c");
 }
 
-fn run_build(target: &str) -> String {
+fn run_build(target: &str, monorepo_dir: &Path) -> String {
     println!("\nBuilding target: {target}...");
-
-    #[cfg(target_os = "macos")]
-    const APPLE: &str = "true";
-    #[cfg(not(target_os = "macos"))]
-    const APPLE: &str = "false";
 
     let mut cxx_flags = "-w";
     if cfg!(target_os = "linux") {
-        cxx_flags = "-w -std=c++17 --include=algorithm";
+        cxx_flags = "-w -std=c++20 --include=algorithm";
     }
     let use_emscripten = env::var("CARGO_CFG_TARGET_ARCH")
         .map(|arch| arch == "wasm32")
         .unwrap_or(false);
 
-    let mut cfg = Config::new(TON_MONOREPO_DIR);
+    let mut cfg = Config::new(monorepo_dir);
+    if cfg!(target_os = "linux") {
+        env::set_var("CC", "clang-21");
+        env::set_var("CXX", "clang++-21");
+        cfg.define("CMAKE_C_COMPILER", "clang-21")
+            .define("CMAKE_CXX_COMPILER", "clang++-21");
+    }
+
+    let shared_build_dir = resolve_shared_build_dir(monorepo_dir);
     let dst = cfg
-        .define("BUILD_SHARED_LIBS", "false")
-        .define("CMAKE_POSITION_INDEPENDENT_CODE", "ON")
+        .out_dir(&shared_build_dir)
         .define(
             "USE_EMSCRIPTEN",
             if use_emscripten { "true" } else { "false" },
         )
         .define("TONLIBJSON_STATIC", "ON")
         .define("EMULATOR_STATIC", "ON")
-        .define("TON_USE_ABSEIL", "OFF")
+        .define("TON_ONLY_TONLIB", "ON")
         // .define("PORTABLE", "true") // statically link system libraries such as libstdc++
-        .define("APPLE", APPLE)
         .define("CMAKE_BUILD_TYPE", CMAKE_BUILD_TYPE)
         .define("CMAKE_C_FLAGS", "-w")
         .define("CMAKE_CXX_FLAGS", cxx_flags)
@@ -158,94 +172,160 @@ fn run_build(target: &str) -> String {
     dst.build().display().to_string()
 }
 
-fn checkout_repo() {
-    // cleanup tonlib after previous build
-    if Path::new(TON_MONOREPO_DIR).exists() {
-        let _ = fs::remove_dir_all(TON_MONOREPO_DIR);
+// function must be safe to handle _lock
+fn checkout_repo(monorepo_dir: &Path) -> anyhow::Result<()> {
+    if let Some(parent_dir) = monorepo_dir.parent() {
+        fs::create_dir_all(parent_dir)?;
+    }
+
+    if !monorepo_dir.exists() {
+        clone_repo(monorepo_dir)?;
+        return Ok(());
+    }
+
+    if !repo_is_healthy(monorepo_dir) {
+        println!(
+            "repo in {} looks broken, cloning again",
+            monorepo_dir.display()
+        );
+        fs::remove_dir_all(monorepo_dir)?;
+        clone_repo(monorepo_dir)?;
+    }
+    Ok(())
+}
+
+fn patch_macos_dsymutil_linker_hook(monorepo_dir: &Path) {
+    if !cfg!(target_os = "macos") {
+        return;
+    }
+
+    let cmake_lists_path = monorepo_dir.join("CMakeLists.txt");
+    let original = fs::read_to_string(&cmake_lists_path)
+        .unwrap_or_else(|error| panic!("Failed to read {}: {error}", cmake_lists_path.display()));
+    let hook = r#"if(NOT DSYMUTIL_LINK_CONFIGURED AND NOT CMAKE_GENERATOR MATCHES "Xcode" AND CMAKE_BUILD_TYPE MATCHES "Debug|RelWithDebInfo")"#;
+    let guarded_hook = r#"if(NOT DSYMUTIL_LINK_CONFIGURED AND CMAKE_VERSION VERSION_LESS "4.0" AND NOT CMAKE_GENERATOR MATCHES "Xcode" AND CMAKE_BUILD_TYPE MATCHES "Debug|RelWithDebInfo")"#;
+
+    if !original.contains(hook) || original.contains(guarded_hook) {
+        return;
+    }
+
+    let patched = original.replace(hook, guarded_hook);
+    fs::write(&cmake_lists_path, patched)
+        .unwrap_or_else(|error| panic!("Failed to patch {}: {error}", cmake_lists_path.display()));
+}
+
+fn repo_is_healthy(monorepo_dir: &Path) -> bool {
+    if !monorepo_dir.join(".git").exists() {
+        return false;
+    }
+
+    if git_output(monorepo_dir, &["status", "--short"]).is_none() {
+        return false;
+    };
+    // if !status_output.is_empty() {
+    //     return false;
+    // }
+
+    if git_output(monorepo_dir, &["submodule", "status", "--recursive"]).is_none() {
+        return false;
+    };
+    true
+
+    // submodule_status
+    //     .lines()
+    //     .all(|line| line.is_empty() || line.starts_with(' '))
+}
+
+fn clone_repo(monorepo_dir: &Path) -> anyhow::Result<()> {
+    if monorepo_dir.exists() {
+        fs::remove_dir_all(monorepo_dir)?;
     }
 
     let clone_status = Command::new("git")
-        .args([
-            "clone",
-            "--branch",
-            TON_MONOREPO_REVISION,
-            "--depth",
-            "1",                    // get only the latest commit
-            "--recurse-submodules", // clone submodules as well
-            "--shallow-submodules", // get only the latest commit of submodules
-            TON_MONOREPO_URL,
-            TON_MONOREPO_DIR,
-        ])
-        .status()
-        .unwrap();
+        .arg("clone")
+        .arg("--branch")
+        .arg(TON_MONOREPO_REVISION)
+        .arg("--depth")
+        .arg("1")
+        .arg("--no-tags")
+        .arg("--single-branch")
+        .arg("--recurse-submodules")
+        .arg("--shallow-submodules")
+        .arg("--filter")
+        .arg("blob:none")
+        .arg("--also-filter-submodules")
+        .arg("--jobs")
+        .arg("8")
+        .arg(TON_MONOREPO_URL)
+        .arg(monorepo_dir)
+        .status()?;
 
     if !clone_status.success() {
-        // fallback to clone entire repo and then checkout desired commit
+        println!("Failed to clone TON repo by tag, trying full clone...");
         let full_clone_status = Command::new("git")
-            .args([
-                "clone",
-                "--recurse-submodules", // clone submodules as well
-                "--shallow-submodules", // get only the latest commit of submodules
-                TON_MONOREPO_URL,
-                TON_MONOREPO_DIR,
-            ])
-            .status()
-            .unwrap();
+            .arg("clone")
+            .arg("--recurse-submodules")
+            .arg("--shallow-submodules")
+            .arg("--filter")
+            .arg("blob:none")
+            .arg("--also-filter-submodules")
+            .arg("--jobs")
+            .arg("8")
+            .arg(TON_MONOREPO_URL)
+            .arg(monorepo_dir)
+            .status()?;
 
-        if full_clone_status.success() {
-            println!("Cloned repository successfully!");
-        } else {
-            panic!("Failed to clone repository!");
+        if !full_clone_status.success() {
+            bail!("Failed to clone repository!");
         }
     };
 
-    let checkout_status = Command::new("git")
-        .current_dir(TON_MONOREPO_DIR)
-        .args(["checkout", TON_MONOREPO_REVISION])
-        .status()
-        .unwrap();
-
-    if checkout_status.success() {
-        println!("Cloned and checked out specific commit successfully!");
-    } else {
-        panic!("Failed to checkout specific commit!");
-    }
-
-    let update_submodules_status = Command::new("git")
-        .current_dir(TON_MONOREPO_DIR)
-        .args(["submodule", "update", "--init", "--recursive"])
-        .status()
-        .unwrap();
-    if !update_submodules_status.success() {
-        panic!("Git update submodules for TON repo fail");
-    }
+    println!("Cloned repository successfully!");
+    Ok(())
 }
 
-// TODO it's workaround to make v2025.02 works.
-// likely need to be updated after new version of TON
-// replace '  if (NOT USE_EMSCRIPTEN)' by '  if (TRUE)' in ton/crypto/CMakeLists.txt
-fn patch_cmake() {
-    let cmake_path = Path::new(TON_MONOREPO_DIR).join("crypto/CMakeLists.txt");
-    let target_line = 453;
-    let new_line = "  if (TRUE)";
-    let file = File::open(&cmake_path).unwrap();
-    let reader = BufReader::new(file);
-    let mut lines: Vec<String> = reader.lines().collect::<Result<_, _>>().unwrap();
+fn git_output(monorepo_dir: &Path, args: &[&str]) -> Option<String> {
+    let output = Command::new("git")
+        .current_dir(monorepo_dir)
+        .args(args)
+        .output()
+        .ok()?;
 
-    if target_line >= lines.len() {
-        panic!(
-            "CMakeLists.txt doesn't contains so many lines ({target_line} >= {})",
-            lines.len()
-        );
+    if !output.status.success() {
+        return None;
     }
-    lines[target_line] = new_line.to_string();
 
-    // write file back
-    use std::fs::File;
-    use std::io::Write;
-    let mut file = File::create(&cmake_path).unwrap();
-    for line in lines {
-        writeln!(file, "{}", line).unwrap();
+    Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+fn repo_lock(monorepo_dir: &Path) -> File {
+    let lock_file_name = format!(
+        "{}.lock",
+        monorepo_dir
+            .file_name()
+            .unwrap_or_else(|| panic!("Invalid TON monorepo path: {}", monorepo_dir.display()))
+            .to_string_lossy()
+    );
+    let lock_path = monorepo_dir.with_file_name(lock_file_name);
+
+    loop {
+        match File::options()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(&lock_path)
+        {
+            Ok(lock_file) => match lock_file.try_lock_exclusive() {
+                Ok(()) => return lock_file,
+                Err(error) if error.kind() == ErrorKind::WouldBlock => {
+                    println!("Waiting for lock on {}...", monorepo_dir.display());
+                    std::thread::sleep(Duration::from_secs(1));
+                }
+                Err(error) => panic!("Failed to acquire TON repo lock: {error}"),
+            },
+            Err(error) => panic!("Failed to open TON repo lock file: {error}"),
+        }
     }
 }
 
@@ -318,4 +398,33 @@ fn install_macos_deps() {
     println!("cargo:rustc-link-search=native={openssl}/lib");
     println!("cargo:rustc-link-search=native={libsodium}/lib");
     println!("cargo:rustc-link-search=native={secp256k1}/lib");
+}
+
+fn resolve_monorepo_dir() -> PathBuf {
+    if let Some(dir) = env::var_os(TON_MONOREPO_DIR_ENV) {
+        return PathBuf::from(dir);
+    }
+
+    let cargo_home = env::var("CARGO_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| dirs::home_dir().unwrap().join(".cargo"));
+
+    let repo_dir = format!("git/db/tonlibsys_ton_{TON_MONOREPO_REVISION}");
+    cargo_home.join(repo_dir)
+}
+
+fn resolve_shared_build_dir(monorepo_dir: &Path) -> PathBuf {
+    let target = env::var("TARGET").unwrap_or_else(|_| "unknown-target".to_owned());
+    let profile = env::var("PROFILE").unwrap_or_else(|_| "unknown-profile".to_owned());
+    let feature_suffix = if cfg!(feature = "no_avx512") {
+        "-no_avx512"
+    } else {
+        ""
+    };
+    let build_dir_name = format!("{profile}-{CMAKE_BUILD_TYPE}{feature_suffix}");
+
+    monorepo_dir
+        .join("target")
+        .join(target)
+        .join(build_dir_name)
 }

@@ -23,6 +23,12 @@ Then, in your Rust code, you can import the library with:
 use tonlib_sys;
 ```
 
+## Build
+
+To speed up the build process, the TON monorepo is cloned only once into the ./cargo/git/db/ directory using an fs-lock.
+
+If the cloned repository becomes inconsistent and causes build issues, you can manually remove the TON folder from ./cargo/git/db/ and retry the build.
+
 
 ## Contributing
 
