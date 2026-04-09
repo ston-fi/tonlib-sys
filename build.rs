@@ -56,7 +56,7 @@ fn build_monorepo() {
         println!("cargo:rustc-link-arg=-lstdc++");
         println!("cargo:rustc-env=CC=clang");
         println!("cargo:rustc-env=CXX=clang++");
-        println!("cargo:rustc-env=CMAKE_CXX_STANDARD=17");
+        println!("cargo:rustc-env=CMAKE_CXX_STANDARD=20");
     }
 
     env::set_var("LD_LIBRARY_PATH", "lib/x86_64-linux-gnu");
@@ -131,7 +131,7 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
 
     let mut cxx_flags = "-w";
     if cfg!(target_os = "linux") {
-        cxx_flags = "-w -std=c++17 --include=algorithm";
+        cxx_flags = "-w -std=c++20 --include=algorithm";
     }
     let use_emscripten = env::var("CARGO_CFG_TARGET_ARCH")
         .map(|arch| arch == "wasm32")
