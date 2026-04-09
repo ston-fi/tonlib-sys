@@ -138,6 +138,13 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
         .unwrap_or(false);
 
     let mut cfg = Config::new(monorepo_dir);
+    if cfg!(target_os = "linux") {
+        env::set_var("CC", "clang-21");
+        env::set_var("CXX", "clang++-21");
+        cfg.define("CMAKE_C_COMPILER", "clang-21")
+            .define("CMAKE_CXX_COMPILER", "clang++-21");
+    }
+
     let shared_build_dir = resolve_shared_build_dir(monorepo_dir);
     let dst = cfg
         .out_dir(&shared_build_dir)
