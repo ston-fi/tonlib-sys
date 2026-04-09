@@ -29,6 +29,11 @@ fn main() {
 fn build_monorepo() {
     let monorepo_dir = resolve_monorepo_dir();
     println!("Using {} folder for TON monorepo", monorepo_dir.display());
+    if let Some(parent_dir) = monorepo_dir.parent() {
+        fs::create_dir_all(parent_dir)
+            .unwrap_or_else(|error| panic!("Failed to create {}: {error}", parent_dir.display()));
+    }
+    let _repo_lock = repo_lock(&monorepo_dir);
 
     #[cfg(feature = "no_avx512")]
     disable_avx512_for_rustc();
@@ -133,7 +138,9 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
         .unwrap_or(false);
 
     let mut cfg = Config::new(monorepo_dir);
+    let shared_build_dir = resolve_shared_build_dir(monorepo_dir);
     let dst = cfg
+        .out_dir(&shared_build_dir)
         .define(
             "USE_EMSCRIPTEN",
             if use_emscripten { "true" } else { "false" },
@@ -163,8 +170,6 @@ fn checkout_repo(monorepo_dir: &Path) -> anyhow::Result<()> {
     if let Some(parent_dir) = monorepo_dir.parent() {
         fs::create_dir_all(parent_dir)?;
     }
-
-    let _repo_lock = repo_lock(monorepo_dir);
 
     if !monorepo_dir.exists() {
         clone_repo(monorepo_dir)?;
@@ -392,12 +397,27 @@ fn resolve_monorepo_dir() -> PathBuf {
     if let Some(dir) = env::var_os(TON_MONOREPO_DIR_ENV) {
         return PathBuf::from(dir);
     }
-    // format!("./ton_{TON_MONOREPO_REVISION}").into()
 
-    let cargo_home = std::env::var("CARGO_HOME")
+    let cargo_home = env::var("CARGO_HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|_| dirs::home_dir().unwrap().join(".cargo"));
 
     let repo_dir = format!("git/db/tonlibsys_ton_{TON_MONOREPO_REVISION}");
     cargo_home.join(repo_dir)
+}
+
+fn resolve_shared_build_dir(monorepo_dir: &Path) -> PathBuf {
+    let target = env::var("TARGET").unwrap_or_else(|_| "unknown-target".to_owned());
+    let profile = env::var("PROFILE").unwrap_or_else(|_| "unknown-profile".to_owned());
+    let feature_suffix = if cfg!(feature = "no_avx512") {
+        "-no_avx512"
+    } else {
+        ""
+    };
+    let build_dir_name = format!("{profile}-{CMAKE_BUILD_TYPE}{feature_suffix}");
+
+    monorepo_dir
+        .join("target")
+        .join(target)
+        .join(build_dir_name)
 }
