@@ -91,6 +91,8 @@ fn build_monorepo() {
     println!("cargo:rustc-link-search=native={build_dir}/build/keys");
     println!("cargo:rustc-link-lib=static=keys");
 
+    link_ton_bundled_secp256k1(&build_dir);
+
     let build_dir = run_build("emulator", &monorepo_dir);
     // === emulator libraries ===
     // emulator
@@ -121,7 +123,6 @@ fn build_monorepo() {
     // dynamic libs
     println!("cargo:rustc-link-lib=dylib=z"); // zlib
     println!("cargo:rustc-link-lib=dylib=sodium");
-    println!("cargo:rustc-link-lib=dylib=secp256k1");
     println!("cargo:rustc-link-search=native={build_dir}/build/third-party/crc32c");
     println!("cargo:rustc-link-lib=static=crc32c");
 }
@@ -170,6 +171,39 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
     disable_avx512_for_gcc(dst);
 
     dst.build().display().to_string()
+}
+
+fn link_ton_bundled_secp256k1(build_dir: &str) {
+    let candidates = [
+        PathBuf::from(build_dir).join("build/third-party/secp256k1/.libs/libsecp256k1.a"),
+        PathBuf::from(build_dir).join("build/third-party/secp256k1/libsecp256k1.a"),
+        PathBuf::from(build_dir).join("build/third-party/secp256k1/src/.libs/libsecp256k1.a"),
+    ];
+
+    let src = candidates
+        .into_iter()
+        .find(|path| path.exists())
+        .unwrap_or_else(|| {
+            panic!(
+                "TON bundled secp256k1 archive not found under {}",
+                build_dir
+            )
+        });
+
+    let dst = src.with_file_name("libtonlib_monorepo_secp256k1.a");
+    fs::copy(&src, &dst).unwrap_or_else(|error| {
+        panic!(
+            "Failed to copy bundled secp256k1 archive from {} to {}: {error}",
+            src.display(),
+            dst.display()
+        )
+    });
+
+    println!(
+        "cargo:rustc-link-search=native={}",
+        dst.parent().unwrap().display()
+    );
+    println!("cargo:rustc-link-lib=static=tonlib_monorepo_secp256k1");
 }
 
 // function must be safe to handle _lock
