@@ -176,12 +176,15 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
         .define("CMAKE_BUILD_TYPE", CMAKE_BUILD_TYPE)
         .define("CMAKE_C_FLAGS", "-w")
         .define("CMAKE_CXX_FLAGS", cxx_flags)
-        .build_arg("-j")
-        .build_arg(available_parallelism().unwrap().get().to_string())
         .configure_arg("-Wno-dev")
         .build_target(target)
         .always_configure(true)
         .very_verbose(true);
+
+    if !is_musl_target {
+        dst.build_arg("-j")
+            .build_arg(available_parallelism().unwrap().get().to_string());
+    }
 
     #[cfg(all(feature = "no_avx512", not(target_os = "macos")))]
     disable_avx512_for_gcc(dst);
