@@ -191,9 +191,11 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
 
     let cargo_makeflags = is_musl_target.then(|| env::var_os("CARGO_MAKEFLAGS"));
     let makeflags = is_musl_target.then(|| env::var_os("MAKEFLAGS"));
+    let num_jobs = is_musl_target.then(|| env::var_os("NUM_JOBS"));
     if is_musl_target {
         env::remove_var("CARGO_MAKEFLAGS");
         env::remove_var("MAKEFLAGS");
+        env::remove_var("NUM_JOBS");
     }
 
     let build_dir = dst.build().display().to_string();
@@ -203,6 +205,9 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
     }
     if let Some(Some(makeflags)) = makeflags {
         env::set_var("MAKEFLAGS", makeflags);
+    }
+    if let Some(Some(num_jobs)) = num_jobs {
+        env::set_var("NUM_JOBS", num_jobs);
     }
 
     build_dir
