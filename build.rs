@@ -189,7 +189,23 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
     #[cfg(all(feature = "no_avx512", not(target_os = "macos")))]
     disable_avx512_for_gcc(dst);
 
-    dst.build().display().to_string()
+    let cargo_makeflags = is_musl_target.then(|| env::var_os("CARGO_MAKEFLAGS"));
+    let makeflags = is_musl_target.then(|| env::var_os("MAKEFLAGS"));
+    if is_musl_target {
+        env::remove_var("CARGO_MAKEFLAGS");
+        env::remove_var("MAKEFLAGS");
+    }
+
+    let build_dir = dst.build().display().to_string();
+
+    if let Some(Some(cargo_makeflags)) = cargo_makeflags {
+        env::set_var("CARGO_MAKEFLAGS", cargo_makeflags);
+    }
+    if let Some(Some(makeflags)) = makeflags {
+        env::set_var("MAKEFLAGS", makeflags);
+    }
+
+    build_dir
 }
 
 // function must be safe to handle _lock
