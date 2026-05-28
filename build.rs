@@ -12,6 +12,7 @@ use std::{env, fs};
 const TON_MONOREPO_URL: &str = "https://github.com/ton-blockchain/ton";
 const TON_MONOREPO_REVISION: &str = "v2026.04-1";
 const TON_MONOREPO_DIR_ENV: &str = "TON_MONOREPO_DIR";
+const MUSL_TARGET: &str = "x86_64-unknown-linux-musl";
 
 #[cfg(feature = "with_debug_info")]
 const CMAKE_BUILD_TYPE: &str = "RelWithDebInfo";
@@ -27,6 +28,8 @@ fn main() {
 }
 
 fn build_monorepo() {
+    let is_linux_target = target_os() == "linux";
+    let is_musl_target = target_env() == "musl";
     let monorepo_dir = resolve_monorepo_dir();
     println!("Using {} folder for TON monorepo", monorepo_dir.display());
     if let Some(parent_dir) = monorepo_dir.parent() {
@@ -47,13 +50,17 @@ fn build_monorepo() {
     #[cfg(target_os = "macos")]
     install_macos_deps();
 
-    if cfg!(target_os = "macos") {
+    if target_os() == "macos" {
         println!("cargo:rustc-link-lib=dylib=c++");
         println!("cargo:rustc-link-arg=-lc++");
     }
-    if cfg!(target_os = "linux") {
-        println!("cargo:rustc-link-lib=dylib=stdc++");
-        println!("cargo:rustc-link-arg=-lstdc++");
+    if is_linux_target {
+        if is_musl_target {
+            println!("cargo:rustc-link-lib=static=stdc++");
+        } else {
+            println!("cargo:rustc-link-lib=dylib=stdc++");
+            println!("cargo:rustc-link-arg=-lstdc++");
+        }
         println!("cargo:rustc-env=CC=clang");
         println!("cargo:rustc-env=CXX=clang++");
         println!("cargo:rustc-env=CMAKE_CXX_STANDARD=20");
@@ -110,7 +117,7 @@ fn build_monorepo() {
     println!("cargo:rustc-link-search=native={build_dir}/build/third-party/blst");
     println!("cargo:rustc-link-lib=static=blst");
     // openssl
-    if cfg!(target_os = "linux") {
+    if is_linux_target {
         // TON builds its own OpenSSL. Use that on Linux to avoid symbol/version mismatches
         // with runner-provided system libcrypto.
         println!("cargo:rustc-link-search=native={build_dir}/build/third-party/openssl/lib");
@@ -119,9 +126,10 @@ fn build_monorepo() {
         println!("cargo:rustc-link-lib=crypto");
     }
     // dynamic libs
-    println!("cargo:rustc-link-lib=dylib=z"); // zlib
-    println!("cargo:rustc-link-lib=dylib=sodium");
-    println!("cargo:rustc-link-lib=dylib=secp256k1");
+    let native_link_kind = if is_musl_target { "static" } else { "dylib" };
+    println!("cargo:rustc-link-lib={native_link_kind}=z"); // zlib
+    println!("cargo:rustc-link-lib={native_link_kind}=sodium");
+    println!("cargo:rustc-link-lib={native_link_kind}=secp256k1");
     println!("cargo:rustc-link-search=native={build_dir}/build/third-party/crc32c");
     println!("cargo:rustc-link-lib=static=crc32c");
 }
@@ -130,7 +138,9 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
     println!("\nBuilding target: {target}...");
 
     let mut cxx_flags = "-w";
-    if cfg!(target_os = "linux") {
+    let is_linux_target = target_os() == "linux";
+    let is_musl_target = target_env() == "musl";
+    if is_linux_target {
         cxx_flags = "-w -std=c++20 --include=algorithm";
     }
     let use_emscripten = env::var("CARGO_CFG_TARGET_ARCH")
@@ -138,11 +148,18 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
         .unwrap_or(false);
 
     let mut cfg = Config::new(monorepo_dir);
-    if cfg!(target_os = "linux") {
+    if is_linux_target {
         env::set_var("CC", "clang-21");
         env::set_var("CXX", "clang++-21");
         cfg.define("CMAKE_C_COMPILER", "clang-21")
             .define("CMAKE_CXX_COMPILER", "clang++-21");
+    }
+    if is_musl_target {
+        cfg.define("CMAKE_SYSTEM_NAME", "Linux")
+            .define("CMAKE_C_COMPILER_TARGET", MUSL_TARGET)
+            .define("CMAKE_CXX_COMPILER_TARGET", MUSL_TARGET)
+            .define("CMAKE_EXE_LINKER_FLAGS", "-static-pie")
+            .define("CMAKE_SHARED_LINKER_FLAGS", "-static-pie");
     }
 
     let shared_build_dir = resolve_shared_build_dir(monorepo_dir);
@@ -413,8 +430,28 @@ fn resolve_monorepo_dir() -> PathBuf {
     cargo_home.join(repo_dir)
 }
 
+fn build_target() -> String {
+    env::var("TARGET").unwrap_or_else(|_| "unknown-target".to_owned())
+}
+
+fn target_os() -> String {
+    env::var("CARGO_CFG_TARGET_OS").unwrap_or_else(|_| {
+        if cfg!(target_os = "linux") {
+            "linux".to_owned()
+        } else if cfg!(target_os = "macos") {
+            "macos".to_owned()
+        } else {
+            "unknown".to_owned()
+        }
+    })
+}
+
+fn target_env() -> String {
+    env::var("CARGO_CFG_TARGET_ENV").unwrap_or_else(|_| "unknown".to_owned())
+}
+
 fn resolve_shared_build_dir(monorepo_dir: &Path) -> PathBuf {
-    let target = env::var("TARGET").unwrap_or_else(|_| "unknown-target".to_owned());
+    let target = build_target();
     let profile = env::var("PROFILE").unwrap_or_else(|_| "unknown-profile".to_owned());
     let feature_suffix = if cfg!(feature = "no_avx512") {
         "-no_avx512"
