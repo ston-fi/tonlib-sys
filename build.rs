@@ -217,8 +217,7 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
 fn add_static_libstdcxx_search_path() {
     let cxx = env::var("CXX").unwrap_or_else(|_| "clang++-21".to_owned());
     let output = Command::new(&cxx)
-        .arg("--target")
-        .arg(MUSL_TARGET)
+        .arg(format!("--target={MUSL_TARGET}"))
         .arg("-print-file-name=libstdc++.a")
         .output();
 
