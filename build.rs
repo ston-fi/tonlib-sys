@@ -132,10 +132,16 @@ fn build_monorepo() {
         add_static_library_search_path("clang-21", "libz.a");
         add_static_library_search_path("clang-21", "libsodium.a");
         add_static_library_search_path("clang-21", "libsecp256k1.a");
+        add_static_library_search_path("clang-21", "libgcc_eh.a");
+        add_musl_library_search_path("libm.a");
     }
     println!("cargo:rustc-link-lib={native_link_kind}=z"); // zlib
     println!("cargo:rustc-link-lib={native_link_kind}=sodium");
     println!("cargo:rustc-link-lib={native_link_kind}=secp256k1");
+    if is_musl_target {
+        println!("cargo:rustc-link-lib=static=gcc_eh");
+        println!("cargo:rustc-link-lib=static=m");
+    }
     println!("cargo:rustc-link-search=native={build_dir}/build/third-party/crc32c");
     println!("cargo:rustc-link-lib=static=crc32c");
 }
@@ -244,6 +250,18 @@ fn add_static_library_search_path(compiler: &str, library: &str) {
     if let Some(parent) = path.parent() {
         println!("cargo:rustc-link-search=native={}", parent.display());
     }
+}
+
+fn add_musl_library_search_path(library: &str) {
+    for directory in ["/usr/lib/x86_64-linux-musl", "/lib/x86_64-linux-musl"] {
+        let path = Path::new(directory).join(library);
+        if path.exists() {
+            println!("cargo:rustc-link-search=native={directory}");
+            return;
+        }
+    }
+
+    println!("cargo:warning=Could not resolve {library} for {MUSL_TARGET}");
 }
 
 // function must be safe to handle _lock
