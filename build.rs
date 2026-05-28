@@ -56,7 +56,7 @@ fn build_monorepo() {
     }
     if is_linux_target {
         if is_musl_target {
-            add_static_libstdcxx_search_path();
+            add_static_library_search_path("clang++-21", "libstdc++.a");
             println!("cargo:rustc-link-lib=static=stdc++");
         } else {
             println!("cargo:rustc-link-lib=dylib=stdc++");
@@ -128,6 +128,11 @@ fn build_monorepo() {
     }
     // dynamic libs
     let native_link_kind = if is_musl_target { "static" } else { "dylib" };
+    if is_musl_target {
+        add_static_library_search_path("clang-21", "libz.a");
+        add_static_library_search_path("clang-21", "libsodium.a");
+        add_static_library_search_path("clang-21", "libsecp256k1.a");
+    }
     println!("cargo:rustc-link-lib={native_link_kind}=z"); // zlib
     println!("cargo:rustc-link-lib={native_link_kind}=sodium");
     println!("cargo:rustc-link-lib={native_link_kind}=secp256k1");
@@ -214,26 +219,25 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
     build_dir
 }
 
-fn add_static_libstdcxx_search_path() {
-    let cxx = env::var("CXX").unwrap_or_else(|_| "clang++-21".to_owned());
-    let output = Command::new(&cxx)
+fn add_static_library_search_path(compiler: &str, library: &str) {
+    let output = Command::new(compiler)
         .arg(format!("--target={MUSL_TARGET}"))
-        .arg("-print-file-name=libstdc++.a")
+        .arg(format!("-print-file-name={library}"))
         .output();
 
     let Ok(output) = output else {
-        println!("cargo:warning=Failed to query {cxx} for libstdc++.a");
+        println!("cargo:warning=Failed to query {compiler} for {library}");
         return;
     };
 
     if !output.status.success() {
-        println!("cargo:warning={cxx} failed to resolve libstdc++.a");
+        println!("cargo:warning={compiler} failed to resolve {library}");
         return;
     }
 
     let path = PathBuf::from(String::from_utf8_lossy(&output.stdout).trim());
     if !path.is_absolute() || !path.exists() {
-        println!("cargo:warning=Could not resolve libstdc++.a for {MUSL_TARGET} with {cxx}");
+        println!("cargo:warning=Could not resolve {library} for {MUSL_TARGET} with {compiler}");
         return;
     }
 
