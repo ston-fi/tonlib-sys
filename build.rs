@@ -56,6 +56,7 @@ fn build_monorepo() {
     }
     if is_linux_target {
         if is_musl_target {
+            add_static_libstdcxx_search_path();
             println!("cargo:rustc-link-lib=static=stdc++");
         } else {
             println!("cargo:rustc-link-lib=dylib=stdc++");
@@ -211,6 +212,35 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
     }
 
     build_dir
+}
+
+fn add_static_libstdcxx_search_path() {
+    let cxx = env::var("CXX").unwrap_or_else(|_| "clang++-21".to_owned());
+    let output = Command::new(&cxx)
+        .arg("--target")
+        .arg(MUSL_TARGET)
+        .arg("-print-file-name=libstdc++.a")
+        .output();
+
+    let Ok(output) = output else {
+        println!("cargo:warning=Failed to query {cxx} for libstdc++.a");
+        return;
+    };
+
+    if !output.status.success() {
+        println!("cargo:warning={cxx} failed to resolve libstdc++.a");
+        return;
+    }
+
+    let path = PathBuf::from(String::from_utf8_lossy(&output.stdout).trim());
+    if !path.is_absolute() || !path.exists() {
+        println!("cargo:warning=Could not resolve libstdc++.a for {MUSL_TARGET} with {cxx}");
+        return;
+    }
+
+    if let Some(parent) = path.parent() {
+        println!("cargo:rustc-link-search=native={}", parent.display());
+    }
 }
 
 // function must be safe to handle _lock
