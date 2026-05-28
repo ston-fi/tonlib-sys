@@ -129,6 +129,9 @@ fn build_monorepo() {
     // dynamic libs
     let native_link_kind = if is_musl_target { "static" } else { "dylib" };
     if is_musl_target {
+        println!("cargo:rustc-link-search=native={build_dir}/build/third-party/zlib/lib");
+        println!("cargo:rustc-link-search=native={build_dir}/build/third-party/sodium/lib");
+        println!("cargo:rustc-link-search=native={build_dir}/build/third-party/secp256k1/lib");
         add_musl_library_search_path("libm.a");
         add_static_library_search_path("clang-21", "libgcc_eh.a");
     }
