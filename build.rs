@@ -129,11 +129,8 @@ fn build_monorepo() {
     // dynamic libs
     let native_link_kind = if is_musl_target { "static" } else { "dylib" };
     if is_musl_target {
-        add_static_library_search_path("clang-21", "libz.a");
-        add_static_library_search_path("clang-21", "libsodium.a");
-        add_static_library_search_path("clang-21", "libsecp256k1.a");
-        add_static_library_search_path("clang-21", "libgcc_eh.a");
         add_musl_library_search_path("libm.a");
+        add_static_library_search_path("clang-21", "libgcc_eh.a");
     }
     println!("cargo:rustc-link-lib={native_link_kind}=z"); // zlib
     println!("cargo:rustc-link-lib={native_link_kind}=sodium");
