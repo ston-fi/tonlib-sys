@@ -12,7 +12,7 @@ use std::{env, fs};
 const TON_MONOREPO_URL: &str = "https://github.com/ton-blockchain/ton";
 const TON_MONOREPO_REVISION: &str = "v2026.04-1";
 const TON_MONOREPO_DIR_ENV: &str = "TON_MONOREPO_DIR";
-const MUSL_TARGET: &str = "x86_64-unknown-linux-musl";
+const MUSL_TARGET: &str = "x86_64-alpine-linux-musl";
 
 #[cfg(feature = "with_debug_info")]
 const CMAKE_BUILD_TYPE: &str = "RelWithDebInfo";
