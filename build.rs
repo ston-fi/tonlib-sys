@@ -315,12 +315,18 @@ fn patch_musl_tlb_generation(monorepo_dir: &Path) {
         .unwrap_or_else(|error| panic!("Failed to read {}: {error}", cmake_lists_path.display()));
     let cross_compile_guard = "if (NOT CMAKE_CROSSCOMPILING OR USE_EMSCRIPTEN)";
     let forced_generation = "if (TRUE)";
+    let tlbc_command = "set(GENERATE_TLB_CMD tlbc)";
+    let tlbc_target_file_command = "set(GENERATE_TLB_CMD $<TARGET_FILE:tlbc>)";
 
-    if !original.contains(cross_compile_guard) || original.contains(forced_generation) {
+    if (!original.contains(cross_compile_guard) || original.contains(forced_generation))
+        && (!original.contains(tlbc_command) || original.contains(tlbc_target_file_command))
+    {
         return;
     }
 
-    let patched = original.replace(cross_compile_guard, forced_generation);
+    let patched = original
+        .replace(cross_compile_guard, forced_generation)
+        .replace(tlbc_command, tlbc_target_file_command);
     fs::write(&cmake_lists_path, patched)
         .unwrap_or_else(|error| panic!("Failed to patch {}: {error}", cmake_lists_path.display()));
 }
