@@ -310,23 +310,45 @@ fn patch_macos_dsymutil_linker_hook(monorepo_dir: &Path) {
 }
 
 fn patch_musl_tlb_generation(monorepo_dir: &Path) {
-    let cmake_lists_path = monorepo_dir.join("crypto/CMakeLists.txt");
+    patch_cmake_file(
+        monorepo_dir.join("crypto/CMakeLists.txt"),
+        &[
+            (
+                "if (NOT CMAKE_CROSSCOMPILING OR USE_EMSCRIPTEN)",
+                "if (TRUE)",
+            ),
+            (
+                "set(GENERATE_TLB_CMD tlbc)",
+                "set(GENERATE_TLB_CMD $<TARGET_FILE:tlbc>)",
+            ),
+        ],
+    );
+    patch_cmake_file(
+        monorepo_dir.join("tl/generate/CMakeLists.txt"),
+        &[
+            ("if (NOT CMAKE_CROSSCOMPILING)", "if (TRUE)"),
+            (
+                "set(GENERATE_COMMON_CMD generate_common)",
+                "set(GENERATE_COMMON_CMD $<TARGET_FILE:generate_common>)",
+            ),
+        ],
+    );
+}
+
+fn patch_cmake_file<const N: usize>(cmake_lists_path: PathBuf, replacements: &[(&str, &str); N]) {
     let original = fs::read_to_string(&cmake_lists_path)
         .unwrap_or_else(|error| panic!("Failed to read {}: {error}", cmake_lists_path.display()));
-    let cross_compile_guard = "if (NOT CMAKE_CROSSCOMPILING OR USE_EMSCRIPTEN)";
-    let forced_generation = "if (TRUE)";
-    let tlbc_command = "set(GENERATE_TLB_CMD tlbc)";
-    let tlbc_target_file_command = "set(GENERATE_TLB_CMD $<TARGET_FILE:tlbc>)";
 
-    if (!original.contains(cross_compile_guard) || original.contains(forced_generation))
-        && (!original.contains(tlbc_command) || original.contains(tlbc_target_file_command))
+    if replacements
+        .iter()
+        .all(|(from, to)| !original.contains(from) || original.contains(to))
     {
         return;
     }
 
-    let patched = original
-        .replace(cross_compile_guard, forced_generation)
-        .replace(tlbc_command, tlbc_target_file_command);
+    let patched = replacements
+        .iter()
+        .fold(original, |content, (from, to)| content.replace(from, to));
     fs::write(&cmake_lists_path, patched)
         .unwrap_or_else(|error| panic!("Failed to patch {}: {error}", cmake_lists_path.display()));
 }
