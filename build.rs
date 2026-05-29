@@ -196,14 +196,17 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
         .always_configure(true)
         .very_verbose(true);
 
-    if !is_musl_target {
-        dst.build_arg("-j")
-            .build_arg(available_parallelism().unwrap().get().to_string());
-    }
+    let parallelism = available_parallelism().map(|n| n.get()).unwrap_or(1);
+    dst.build_arg("-j").build_arg(parallelism.to_string());
 
     #[cfg(all(feature = "no_avx512", not(target_os = "macos")))]
     disable_avx512_for_gcc(dst);
 
+    // Cargo's jobserver tokens (CARGO_MAKEFLAGS, MAKEFLAGS) can break under the
+    // musl/Alpine toolchain — file descriptors don't always propagate cleanly
+    // through CMake → make, leading to either jobserver warnings or, worse,
+    // make falling back to a single job. Strip them so the explicit `-j N`
+    // above is the only source of truth for parallelism.
     let cargo_makeflags = is_musl_target.then(|| env::var_os("CARGO_MAKEFLAGS"));
     let makeflags = is_musl_target.then(|| env::var_os("MAKEFLAGS"));
     let num_jobs = is_musl_target.then(|| env::var_os("NUM_JOBS"));
