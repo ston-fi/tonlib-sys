@@ -321,6 +321,15 @@ fn patch_musl_tlb_generation(monorepo_dir: &Path) {
                 "set(GENERATE_TLB_CMD tlbc)",
                 "set(GENERATE_TLB_CMD $<TARGET_FILE:tlbc>)",
             ),
+            ("COMMAND func -PS -o", "COMMAND $<TARGET_FILE:func> -PS -o"),
+            (
+                "COMMAND fift -I${ARG_LIB_DIR} -s",
+                "COMMAND $<TARGET_FILE:fift> -I${ARG_LIB_DIR} -s",
+            ),
+            (
+                "if (NOT CMAKE_CROSSCOMPILING)\n  add_dependencies(smc-envelope gen_fif)\nendif()",
+                "add_dependencies(smc-envelope gen_fif)",
+            ),
         ],
     );
     patch_cmake_file(
