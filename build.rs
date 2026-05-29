@@ -46,6 +46,9 @@ fn build_monorepo() {
     println!("cargo:rerun-if-changed=build.rs");
     checkout_repo(&monorepo_dir).unwrap();
     patch_macos_dsymutil_linker_hook(&monorepo_dir);
+    if is_musl_target {
+        patch_musl_tlb_generation(&monorepo_dir);
+    }
 
     #[cfg(target_os = "macos")]
     install_macos_deps();
@@ -302,6 +305,22 @@ fn patch_macos_dsymutil_linker_hook(monorepo_dir: &Path) {
     }
 
     let patched = original.replace(hook, guarded_hook);
+    fs::write(&cmake_lists_path, patched)
+        .unwrap_or_else(|error| panic!("Failed to patch {}: {error}", cmake_lists_path.display()));
+}
+
+fn patch_musl_tlb_generation(monorepo_dir: &Path) {
+    let cmake_lists_path = monorepo_dir.join("crypto/CMakeLists.txt");
+    let original = fs::read_to_string(&cmake_lists_path)
+        .unwrap_or_else(|error| panic!("Failed to read {}: {error}", cmake_lists_path.display()));
+    let cross_compile_guard = "if (NOT CMAKE_CROSSCOMPILING OR USE_EMSCRIPTEN)";
+    let forced_generation = "if (TRUE)";
+
+    if !original.contains(cross_compile_guard) || original.contains(forced_generation) {
+        return;
+    }
+
+    let patched = original.replace(cross_compile_guard, forced_generation);
     fs::write(&cmake_lists_path, patched)
         .unwrap_or_else(|error| panic!("Failed to patch {}: {error}", cmake_lists_path.display()));
 }
