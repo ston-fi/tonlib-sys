@@ -135,6 +135,10 @@ fn build_monorepo() {
         println!("cargo:rustc-link-search=native={build_dir}/build/third-party/zlib/lib");
         println!("cargo:rustc-link-search=native={build_dir}/build/third-party/sodium/lib");
         println!("cargo:rustc-link-search=native={build_dir}/build/third-party/secp256k1/lib");
+        link_static_libraries_with_prefix(
+            &Path::new(&build_dir).join("build/third-party/abseil-cpp"),
+            "libabsl_",
+        );
         add_musl_library_search_path("libm.a");
         add_static_library_search_path("clang-21", "libgcc_eh.a");
     }
@@ -268,6 +272,86 @@ fn add_musl_library_search_path(library: &str) {
     }
 
     println!("cargo:warning=Could not resolve {library} for {MUSL_TARGET}");
+}
+
+fn link_static_libraries_with_prefix(root: &Path, prefix: &str) {
+    let mut libraries = Vec::new();
+    collect_static_libraries_with_prefix(root, prefix, &mut libraries);
+    libraries.sort();
+    libraries.dedup();
+
+    if libraries.is_empty() {
+        println!(
+            "cargo:warning=Could not resolve static libraries with prefix {prefix} in {}",
+            root.display()
+        );
+        return;
+    }
+
+    let mut directories = libraries
+        .iter()
+        .map(|(directory, _)| directory)
+        .collect::<Vec<_>>();
+    directories.sort();
+    directories.dedup();
+
+    for directory in directories {
+        println!("cargo:rustc-link-search=native={}", directory.display());
+    }
+
+    let mut library_names = libraries
+        .into_iter()
+        .map(|(_, library)| library)
+        .collect::<Vec<_>>();
+    library_names.sort_by(|left, right| {
+        match (left == "absl_raw_hash_set", right == "absl_raw_hash_set") {
+            (true, false) => std::cmp::Ordering::Less,
+            (false, true) => std::cmp::Ordering::Greater,
+            _ => left.cmp(right),
+        }
+    });
+
+    for _ in 0..2 {
+        for library in &library_names {
+            println!("cargo:rustc-link-lib=static={library}");
+        }
+    }
+}
+
+fn collect_static_libraries_with_prefix(
+    directory: &Path,
+    prefix: &str,
+    libraries: &mut Vec<(PathBuf, String)>,
+) {
+    let Ok(entries) = fs::read_dir(directory) else {
+        return;
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_static_libraries_with_prefix(&path, prefix, libraries);
+            continue;
+        }
+
+        let Some(file_name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        if !file_name.starts_with(prefix) {
+            continue;
+        }
+        let Some(library_name) = file_name
+            .strip_prefix("lib")
+            .and_then(|name| name.strip_suffix(".a"))
+        else {
+            continue;
+        };
+        let Some(parent) = path.parent() else {
+            continue;
+        };
+
+        libraries.push((parent.to_path_buf(), library_name.to_string()));
+    }
 }
 
 // function must be safe to handle _lock
