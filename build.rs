@@ -12,6 +12,7 @@ use std::{env, fs};
 const TON_MONOREPO_URL: &str = "https://github.com/ton-blockchain/ton";
 const TON_MONOREPO_REVISION: &str = "v2026.05";
 const TON_MONOREPO_DIR_ENV: &str = "TON_MONOREPO_DIR";
+const MUSL_TARGET: &str = "x86_64-alpine-linux-musl";
 
 #[cfg(feature = "with_debug_info")]
 const CMAKE_BUILD_TYPE: &str = "RelWithDebInfo";
@@ -27,6 +28,8 @@ fn main() {
 }
 
 fn build_monorepo() {
+    let is_linux_target = target_os() == "linux";
+    let is_musl_target = target_env() == "musl";
     let monorepo_dir = resolve_monorepo_dir();
     println!("Using {} folder for TON monorepo", monorepo_dir.display());
     if let Some(parent_dir) = monorepo_dir.parent() {
@@ -43,17 +46,25 @@ fn build_monorepo() {
     println!("cargo:rerun-if-changed=build.rs");
     checkout_repo(&monorepo_dir).unwrap();
     patch_macos_dsymutil_linker_hook(&monorepo_dir);
+    if is_musl_target {
+        patch_musl_tlb_generation(&monorepo_dir);
+    }
 
     #[cfg(target_os = "macos")]
     install_macos_deps();
 
-    if cfg!(target_os = "macos") {
+    if target_os() == "macos" {
         println!("cargo:rustc-link-lib=dylib=c++");
         println!("cargo:rustc-link-arg=-lc++");
     }
-    if cfg!(target_os = "linux") {
-        println!("cargo:rustc-link-lib=dylib=stdc++");
-        println!("cargo:rustc-link-arg=-lstdc++");
+    if is_linux_target {
+        if is_musl_target {
+            add_static_library_search_path("clang++-21", "libstdc++.a");
+            println!("cargo:rustc-link-lib=static=stdc++");
+        } else {
+            println!("cargo:rustc-link-lib=dylib=stdc++");
+            println!("cargo:rustc-link-arg=-lstdc++");
+        }
         println!("cargo:rustc-env=CC=clang");
         println!("cargo:rustc-env=CXX=clang++");
         println!("cargo:rustc-env=CMAKE_CXX_STANDARD=20");
@@ -110,7 +121,7 @@ fn build_monorepo() {
     println!("cargo:rustc-link-search=native={build_dir}/build/third-party/blst");
     println!("cargo:rustc-link-lib=static=blst");
     // openssl
-    if cfg!(target_os = "linux") {
+    if is_linux_target {
         // TON builds its own OpenSSL. Use that on Linux to avoid symbol/version mismatches
         // with runner-provided system libcrypto.
         println!("cargo:rustc-link-search=native={build_dir}/build/third-party/openssl/lib");
@@ -119,9 +130,25 @@ fn build_monorepo() {
         println!("cargo:rustc-link-lib=crypto");
     }
     // dynamic libs
-    println!("cargo:rustc-link-lib=dylib=z"); // zlib
-    println!("cargo:rustc-link-lib=dylib=sodium");
-    println!("cargo:rustc-link-lib=dylib=secp256k1");
+    let native_link_kind = if is_musl_target { "static" } else { "dylib" };
+    if is_musl_target {
+        println!("cargo:rustc-link-search=native={build_dir}/build/third-party/zlib/lib");
+        println!("cargo:rustc-link-search=native={build_dir}/build/third-party/sodium/lib");
+        println!("cargo:rustc-link-search=native={build_dir}/build/third-party/secp256k1/lib");
+        link_static_libraries_with_prefix(
+            &Path::new(&build_dir).join("build/third-party/abseil-cpp"),
+            "libabsl_",
+        );
+        add_musl_library_search_path("libm.a");
+        add_static_library_search_path("clang-21", "libgcc_eh.a");
+    }
+    println!("cargo:rustc-link-lib={native_link_kind}=z"); // zlib
+    println!("cargo:rustc-link-lib={native_link_kind}=sodium");
+    println!("cargo:rustc-link-lib={native_link_kind}=secp256k1");
+    if is_musl_target {
+        println!("cargo:rustc-link-lib=static=gcc_eh");
+        println!("cargo:rustc-link-lib=static=m");
+    }
     println!("cargo:rustc-link-search=native={build_dir}/build/third-party/crc32c");
     println!("cargo:rustc-link-lib=static=crc32c");
 }
@@ -130,7 +157,9 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
     println!("\nBuilding target: {target}...");
 
     let mut cxx_flags = "-w";
-    if cfg!(target_os = "linux") {
+    let is_linux_target = target_os() == "linux";
+    let is_musl_target = target_env() == "musl";
+    if is_linux_target {
         cxx_flags = "-w -std=c++20 --include=algorithm";
     }
     let use_emscripten = env::var("CARGO_CFG_TARGET_ARCH")
@@ -138,11 +167,18 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
         .unwrap_or(false);
 
     let mut cfg = Config::new(monorepo_dir);
-    if cfg!(target_os = "linux") {
+    if is_linux_target {
         env::set_var("CC", "clang-21");
         env::set_var("CXX", "clang++-21");
         cfg.define("CMAKE_C_COMPILER", "clang-21")
             .define("CMAKE_CXX_COMPILER", "clang++-21");
+    }
+    if is_musl_target {
+        cfg.define("CMAKE_SYSTEM_NAME", "Linux")
+            .define("CMAKE_C_COMPILER_TARGET", MUSL_TARGET)
+            .define("CMAKE_CXX_COMPILER_TARGET", MUSL_TARGET)
+            .define("CMAKE_EXE_LINKER_FLAGS", "-static-pie")
+            .define("CMAKE_SHARED_LINKER_FLAGS", "-static-pie");
     }
 
     let shared_build_dir = resolve_shared_build_dir(monorepo_dir);
@@ -159,17 +195,163 @@ fn run_build(target: &str, monorepo_dir: &Path) -> String {
         .define("CMAKE_BUILD_TYPE", CMAKE_BUILD_TYPE)
         .define("CMAKE_C_FLAGS", "-w")
         .define("CMAKE_CXX_FLAGS", cxx_flags)
-        .build_arg("-j")
-        .build_arg(available_parallelism().unwrap().get().to_string())
         .configure_arg("-Wno-dev")
         .build_target(target)
         .always_configure(true)
         .very_verbose(true);
 
+    let parallelism = available_parallelism().map(|n| n.get()).unwrap_or(1);
+    dst.build_arg("-j").build_arg(parallelism.to_string());
+
     #[cfg(all(feature = "no_avx512", not(target_os = "macos")))]
     disable_avx512_for_gcc(dst);
 
-    dst.build().display().to_string()
+    // Cargo's jobserver tokens (CARGO_MAKEFLAGS, MAKEFLAGS) can break under the
+    // musl/Alpine toolchain — file descriptors don't always propagate cleanly
+    // through CMake → make, leading to either jobserver warnings or, worse,
+    // make falling back to a single job. Strip them so the explicit `-j N`
+    // above is the only source of truth for parallelism.
+    let cargo_makeflags = is_musl_target.then(|| env::var_os("CARGO_MAKEFLAGS"));
+    let makeflags = is_musl_target.then(|| env::var_os("MAKEFLAGS"));
+    let num_jobs = is_musl_target.then(|| env::var_os("NUM_JOBS"));
+    if is_musl_target {
+        env::remove_var("CARGO_MAKEFLAGS");
+        env::remove_var("MAKEFLAGS");
+        env::remove_var("NUM_JOBS");
+    }
+
+    let build_dir = dst.build().display().to_string();
+
+    if let Some(Some(cargo_makeflags)) = cargo_makeflags {
+        env::set_var("CARGO_MAKEFLAGS", cargo_makeflags);
+    }
+    if let Some(Some(makeflags)) = makeflags {
+        env::set_var("MAKEFLAGS", makeflags);
+    }
+    if let Some(Some(num_jobs)) = num_jobs {
+        env::set_var("NUM_JOBS", num_jobs);
+    }
+
+    build_dir
+}
+
+fn add_static_library_search_path(compiler: &str, library: &str) {
+    let output = Command::new(compiler)
+        .arg(format!("--target={MUSL_TARGET}"))
+        .arg(format!("-print-file-name={library}"))
+        .output();
+
+    let Ok(output) = output else {
+        println!("cargo:warning=Failed to query {compiler} for {library}");
+        return;
+    };
+
+    if !output.status.success() {
+        println!("cargo:warning={compiler} failed to resolve {library}");
+        return;
+    }
+
+    let path = PathBuf::from(String::from_utf8_lossy(&output.stdout).trim());
+    if !path.is_absolute() || !path.exists() {
+        println!("cargo:warning=Could not resolve {library} for {MUSL_TARGET} with {compiler}");
+        return;
+    }
+
+    if let Some(parent) = path.parent() {
+        println!("cargo:rustc-link-search=native={}", parent.display());
+    }
+}
+
+fn add_musl_library_search_path(library: &str) {
+    for directory in ["/usr/lib/x86_64-linux-musl", "/lib/x86_64-linux-musl"] {
+        let path = Path::new(directory).join(library);
+        if path.exists() {
+            println!("cargo:rustc-link-search=native={directory}");
+            return;
+        }
+    }
+
+    println!("cargo:warning=Could not resolve {library} for {MUSL_TARGET}");
+}
+
+fn link_static_libraries_with_prefix(root: &Path, prefix: &str) {
+    let mut libraries = Vec::new();
+    collect_static_libraries_with_prefix(root, prefix, &mut libraries);
+    libraries.sort();
+    libraries.dedup();
+
+    if libraries.is_empty() {
+        println!(
+            "cargo:warning=Could not resolve static libraries with prefix {prefix} in {}",
+            root.display()
+        );
+        return;
+    }
+
+    let mut directories = libraries
+        .iter()
+        .map(|(directory, _)| directory)
+        .collect::<Vec<_>>();
+    directories.sort();
+    directories.dedup();
+
+    for directory in directories {
+        println!("cargo:rustc-link-search=native={}", directory.display());
+    }
+
+    let mut library_names = libraries
+        .into_iter()
+        .map(|(_, library)| library)
+        .collect::<Vec<_>>();
+    library_names.sort_by(|left, right| {
+        match (left == "absl_raw_hash_set", right == "absl_raw_hash_set") {
+            (true, false) => std::cmp::Ordering::Less,
+            (false, true) => std::cmp::Ordering::Greater,
+            _ => left.cmp(right),
+        }
+    });
+
+    for _ in 0..2 {
+        for library in &library_names {
+            println!("cargo:rustc-link-lib=static={library}");
+        }
+    }
+}
+
+fn collect_static_libraries_with_prefix(
+    directory: &Path,
+    prefix: &str,
+    libraries: &mut Vec<(PathBuf, String)>,
+) {
+    let Ok(entries) = fs::read_dir(directory) else {
+        return;
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_static_libraries_with_prefix(&path, prefix, libraries);
+            continue;
+        }
+
+        let Some(file_name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        if !file_name.starts_with(prefix) {
+            continue;
+        }
+        let Some(library_name) = file_name
+            .strip_prefix("lib")
+            .and_then(|name| name.strip_suffix(".a"))
+        else {
+            continue;
+        };
+        let Some(parent) = path.parent() else {
+            continue;
+        };
+
+        libraries.push((parent.to_path_buf(), library_name.to_string()));
+    }
 }
 
 // function must be safe to handle _lock
@@ -210,6 +392,59 @@ fn patch_macos_dsymutil_linker_hook(monorepo_dir: &Path) {
     }
 
     let patched = original.replace(hook, guarded_hook);
+    fs::write(&cmake_lists_path, patched)
+        .unwrap_or_else(|error| panic!("Failed to patch {}: {error}", cmake_lists_path.display()));
+}
+
+fn patch_musl_tlb_generation(monorepo_dir: &Path) {
+    patch_cmake_file(
+        monorepo_dir.join("crypto/CMakeLists.txt"),
+        &[
+            (
+                "if (NOT CMAKE_CROSSCOMPILING OR USE_EMSCRIPTEN)",
+                "if (TRUE)",
+            ),
+            (
+                "set(GENERATE_TLB_CMD tlbc)",
+                "set(GENERATE_TLB_CMD $<TARGET_FILE:tlbc>)",
+            ),
+            ("COMMAND func -PS -o", "COMMAND $<TARGET_FILE:func> -PS -o"),
+            (
+                "COMMAND fift -I${ARG_LIB_DIR} -s",
+                "COMMAND $<TARGET_FILE:fift> -I${ARG_LIB_DIR} -s",
+            ),
+            (
+                "if (NOT CMAKE_CROSSCOMPILING)\n  add_dependencies(smc-envelope gen_fif)\nendif()",
+                "add_dependencies(smc-envelope gen_fif)",
+            ),
+        ],
+    );
+    patch_cmake_file(
+        monorepo_dir.join("tl/generate/CMakeLists.txt"),
+        &[
+            ("if (NOT CMAKE_CROSSCOMPILING)", "if (TRUE)"),
+            (
+                "set(GENERATE_COMMON_CMD generate_common)",
+                "set(GENERATE_COMMON_CMD $<TARGET_FILE:generate_common>)",
+            ),
+        ],
+    );
+}
+
+fn patch_cmake_file<const N: usize>(cmake_lists_path: PathBuf, replacements: &[(&str, &str); N]) {
+    let original = fs::read_to_string(&cmake_lists_path)
+        .unwrap_or_else(|error| panic!("Failed to read {}: {error}", cmake_lists_path.display()));
+
+    if replacements
+        .iter()
+        .all(|(from, to)| !original.contains(from) || original.contains(to))
+    {
+        return;
+    }
+
+    let patched = replacements
+        .iter()
+        .fold(original, |content, (from, to)| content.replace(from, to));
     fs::write(&cmake_lists_path, patched)
         .unwrap_or_else(|error| panic!("Failed to patch {}: {error}", cmake_lists_path.display()));
 }
@@ -413,8 +648,28 @@ fn resolve_monorepo_dir() -> PathBuf {
     cargo_home.join(repo_dir)
 }
 
+fn build_target() -> String {
+    env::var("TARGET").unwrap_or_else(|_| "unknown-target".to_owned())
+}
+
+fn target_os() -> String {
+    env::var("CARGO_CFG_TARGET_OS").unwrap_or_else(|_| {
+        if cfg!(target_os = "linux") {
+            "linux".to_owned()
+        } else if cfg!(target_os = "macos") {
+            "macos".to_owned()
+        } else {
+            "unknown".to_owned()
+        }
+    })
+}
+
+fn target_env() -> String {
+    env::var("CARGO_CFG_TARGET_ENV").unwrap_or_else(|_| "unknown".to_owned())
+}
+
 fn resolve_shared_build_dir(monorepo_dir: &Path) -> PathBuf {
-    let target = env::var("TARGET").unwrap_or_else(|_| "unknown-target".to_owned());
+    let target = build_target();
     let profile = env::var("PROFILE").unwrap_or_else(|_| "unknown-profile".to_owned());
     let feature_suffix = if cfg!(feature = "no_avx512") {
         "-no_avx512"
