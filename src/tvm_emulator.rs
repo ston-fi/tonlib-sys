@@ -259,9 +259,20 @@ extern "C" {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::error::Error;
+    use std::ffi::{CStr, CString};
+
+    unsafe fn take_emulator_string(
+        value: *const std::os::raw::c_char,
+    ) -> Result<String, Box<dyn Error>> {
+        assert!(!value.is_null());
+        let value_owned = CStr::from_ptr(value).to_str()?.to_owned();
+        string_destroy(value);
+        Ok(value_owned)
+    }
 
     #[test]
-    fn it_creates_tvm_emulator() {
+    fn test_all_tvm_emulator_exports() -> Result<(), Box<dyn Error>> {
         let code = "te6cckECCwEAAe0AART/APSkE/S88sgLAQIBYgIDAgLMBAUCA3pgCQoD79mRDjgEit8GhpgYC42Eit8H0gGADpj+mf9qJofQB9IGpqGEAKqThdRxgamqiq44L5cCSA/SB9AGoYEGhAMGuQ/QAYEogaKCF4BFAqkGQoAn0BLGeLZmZk9qpwQQg97svvKThdcYEakuAB8YEYAmACcYEvgsIH+XhAYHCACT38FCIBuCoQCaoKAeQoAn0BLGeLAOeLZmSRZGWAiXoAegBlgGSQfIA4OmRlgWUD5f/k6DvADGRlgqxniygCfQEJ5bWJZmZkuP2AQA/jYD+gD6QPgoVBIIcFQgE1QUA8hQBPoCWM8WAc8WzMkiyMsBEvQA9ADLAMn5AHB0yMsCygfL/8nQUAjHBfLgShKhA1AkyFAE+gJYzxbMzMntVAH6QDAg1wsBwwCOH4IQ1TJ223CAEMjLBVADzxYi+gISy2rLH8s/yYBC+wCRW+IAMDUVxwXy4En6QDBZyFAE+gJYzxbMzMntVAAuUUPHBfLgSdQwAchQBPoCWM8WzMzJ7VQAfa289qJofQB9IGpqGDYY/BQAuCoQCaoKAeQoAn0BLGeLAOeLZmSRZGWAiXoAegBlgGT8gDg6ZGWBZQPl/+ToQAAfrxb2omh9AH0gamoYP6qQQFEAfwk=\0";
 
         let data = "te6cckECFAEAA3wAAlFwOPUE4QoACAG/b+7lv/B/MjjfQ11sWK3b4LOpS7Bc7BSmJBVmyz5hdQECAEoBaHR0cHM6Ly90YXJhbnRpbmkuZGV2L3N0b24vbW9vbi5qc29uART/APSkE/S88sgLAwIBYgQFAgLMBgcAG6D2BdqJofQB9IH0gahhAgHUCAkCAUgKCwC7CDHAJJfBOAB0NMDAXGwlRNfA/AL4PpA+kAx+gAxcdch+gAx+gAwAtMfghAPin6lUiC6lTE0WfAI4IIQF41FGVIgupYxREQD8AngNYIQWV8HvLqTWfAK4F8EhA/y8IAARPpEMHC68uFNgAgEgDA0CASASEwH1APTP/oA+kAh8AHtRND6APpA+kDUMFE2oVIqxwXy4sEowv/y4sJUNEJwVCATVBQDyFAE+gJYzxYBzxbMySLIywES9AD0AMsAySD5AHB0yMsCygfL/8nQBPpA9AQx+gB3gBjIywVQCM8WcPoCF8trE8yCEBeNRRnIyx8ZgDgP3O1E0PoA+kD6QNQwCNM/+gBRUaAF+kD6QFNbxwVUc21wVCATVBQDyFAE+gJYzxYBzxbMySLIywES9AD0AMsAyfkAcHTIywLKB8v/ydBQDccFHLHy4sMK+gBRqKGCCJiWgIIImJaAErYIoYIImJaAoBihJ+MPJdcLAcMAI4A8QEQCayz9QB/oCIs8WUAbPFiX6AlADzxbJUAXMI5FykXHiUAioE6CCCJiWgKoAggiYloCgoBS88uLFBMmAQPsAECPIUAT6AljPFgHPFszJ7VQAcFJ5oBihghBzYtCcyMsfUjDLP1j6AlAHzxZQB88WyXGAGMjLBSTPFlAG+gIVy2oUzMlx+wAQJBAjAA4QSRA4N18EAHbCALCOIYIQ1TJ223CAEMjLBVAIzxZQBPoCFstqEssfEss/yXL7AJM1bCHiA8hQBPoCWM8WAc8WzMntVADbO1E0PoA+kD6QNQwB9M/+gD6QDBRUaFSSccF8uLBJ8L/8uLCggiYloCqABagFrzy4sOCEHvdl97Iyx8Vyz9QA/oCIs8WAc8WyXGAGMjLBSTPFnD6AstqzMmAQPsAQBPIUAT6AljPFgHPFszJ7VSAAgyAINch7UTQ+gD6QPpA1DAE0x+CEBeNRRlSILqCEHvdl94TuhKx8uLF0z8x+gAwE6BQI8hQBPoCWM8WAc8WzMntVIH++ZZY=\0";
@@ -270,13 +281,83 @@ mod tests {
         let data_slice = data.as_bytes();
         let code_packed = code_slice.as_ptr();
         let data_packed = data_slice.as_ptr();
+        let empty_cell = CString::new("te6cckEBAQEAAgAAAEysuc0=")?;
+        let address = CString::new(format!("0:{}", "F".repeat(64)))?;
+        let rand_seed = CString::new("F".repeat(64))?;
+        let extra_currencies = CString::new("100=20000 200=1")?;
+        let invalid = CString::new("invalid")?;
 
         unsafe {
+            assert!(emulator_set_verbosity_level(0));
+
             let emulator =
                 tvm_emulator_create(code_packed as *const i8, data_packed as *const i8, 2);
-            tvm_emulator_run_get_method(emulator, 11111123, data_packed as *const i8);
             assert!(!emulator.is_null());
+
+            assert!(tvm_emulator_set_libraries(emulator, empty_cell.as_ptr()));
+            assert!(tvm_emulator_set_c7(
+                emulator,
+                address.as_ptr(),
+                1_337,
+                1_000,
+                rand_seed.as_ptr(),
+                std::ptr::null(),
+            ));
+            assert!(tvm_emulator_set_extra_currencies(
+                emulator,
+                extra_currencies.as_ptr(),
+            ));
+            assert!(tvm_emulator_set_prev_blocks_info(
+                emulator,
+                std::ptr::null(),
+            ));
+            assert!(tvm_emulator_set_gas_limit(emulator, 1_000_000));
+            assert!(tvm_emulator_set_debug_enabled(emulator, 1));
+
+            let result = take_emulator_string(tvm_emulator_run_get_method(
+                emulator,
+                11111123,
+                invalid.as_ptr(),
+            ))?;
+            assert!(result.contains(r#""success":false"#));
+
+            let raw_result = tvm_emulator_emulate_run_method(
+                invalid.as_bytes().len() as u32,
+                invalid.as_ptr(),
+                1_000_000,
+            );
+            assert!(raw_result.is_null());
+
+            let detailed_result = tvm_emulator_emulate_run_method_detailed(
+                invalid.as_bytes().len() as u32,
+                invalid.as_ptr(),
+                1_000_000,
+            );
+            assert!(!detailed_result.is_null());
+            run_method_detailed_result_destroy(detailed_result);
+
+            let result = take_emulator_string(tvm_emulator_send_external_message(
+                emulator,
+                invalid.as_ptr(),
+            ))?;
+            assert!(result.contains(r#""success":false"#));
+
+            let result = take_emulator_string(tvm_emulator_send_internal_message(
+                emulator,
+                invalid.as_ptr(),
+                1_000,
+            ))?;
+            assert!(result.contains(r#""success":false"#));
+
             tvm_emulator_destroy(emulator);
+
+            let version = take_emulator_string(emulator_version())?;
+            assert!(version.contains("emulatorLibCommitHash"));
+            assert!(version.contains("emulatorLibCommitDate"));
+
+            string_destroy(std::ptr::null());
         }
+
+        Ok(())
     }
 }

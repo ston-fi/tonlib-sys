@@ -31,16 +31,37 @@ extern "C" {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::error::Error;
+    use std::ffi::{CStr, CString};
 
     #[test]
-    fn it_creates_client() {
+    fn test_all_tonlib_json_exports() -> Result<(), Box<dyn Error>> {
+        let sync_request = CString::new(r#"{"@type":"getBip39Hints","prefix":"aban"}"#)?;
+        let async_request = CString::new(r#"{"@type":"getBip39Hints","prefix":"ab"}"#)?;
+
         unsafe {
             let client = tonlib_client_json_create();
-            tonlib_client_set_verbosity_level(4);
             assert!(!client.is_null());
-            tonlib_client_json_send(client, "123\0".as_bytes().as_ptr() as *const i8);
-            tonlib_client_json_receive(client, 1.0);
+
+            tonlib_client_set_verbosity_level(0);
+
+            let response = tonlib_client_json_execute(client, sync_request.as_ptr());
+            assert!(!response.is_null());
+            let response = CStr::from_ptr(response).to_str()?;
+            assert!(response.contains(r#""@type":"bip39Hints""#));
+            assert!(response.contains("abandon"));
+
+            tonlib_client_json_send(client, async_request.as_ptr());
+            let response = tonlib_client_json_receive(client, 1.0);
+            assert!(!response.is_null());
+            assert!(CStr::from_ptr(response)
+                .to_str()?
+                .contains(r#""@type":"bip39Hints""#));
+
+            tonlib_client_json_cancel_requests(client);
             tonlib_client_json_destroy(client);
         }
+
+        Ok(())
     }
 }
