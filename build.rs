@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "shared-tonlib", allow(dead_code))]
+
 use anyhow::bail;
 use cmake::Config;
 use fs2::FileExt;
@@ -97,6 +99,10 @@ fn build_monorepo() {
     println!("cargo:rustc-link-search=native={build_dir}/build/emulator");
     println!("cargo:rustc-link-lib=static=emulator");
     println!("cargo:rustc-link-lib=static=emulator_static");
+    // `emulator_version` is implemented by `emulator`, but its commit metadata lives in the
+    // root-level `git` target.
+    println!("cargo:rustc-link-search=native={build_dir}/build");
+    println!("cargo:rustc-link-lib=static=git");
     // crypto
     println!("cargo:rustc-link-search=native={build_dir}/build/crypto");
     println!("cargo:rustc-link-lib=static=ton_block");
