@@ -47,6 +47,43 @@ extern "C" {
         config: *const std::os::raw::c_char,
     ) -> bool;
 
+    /// Sets extra-currency balances on a TVM emulator.
+    ///
+    /// `extra_currencies` uses the upstream `currency_id=balance` space-separated format.
+    ///
+    /// # Safety
+    ///
+    /// `tvm_emulator` must be a valid, live TVM emulator pointer and `extra_currencies` must point
+    /// to a valid, NUL-terminated C string for the duration of the call.
+    pub fn tvm_emulator_set_extra_currencies(
+        tvm_emulator: *mut std::os::raw::c_void,
+        extra_currencies: *const std::os::raw::c_char,
+    ) -> bool;
+
+    /// Sets a previously created configuration object on a TVM emulator.
+    ///
+    /// The configuration remains caller-owned and must outlive the emulator's use of it.
+    ///
+    /// # Safety
+    ///
+    /// `tvm_emulator` must be a valid, live TVM emulator pointer and `config` must be a valid,
+    /// live pointer returned by [`emulator_config_create`](crate::emulator_config_create).
+    pub fn tvm_emulator_set_config_object(
+        tvm_emulator: *mut std::os::raw::c_void,
+        config: *mut std::os::raw::c_void,
+    ) -> bool;
+
+    /// Sets the previous-blocks tuple used as the thirteenth element of `c7`.
+    ///
+    /// # Safety
+    ///
+    /// `tvm_emulator` must be a valid, live TVM emulator pointer. If `info_boc` is non-null, it
+    /// must point to a valid, NUL-terminated C string for the duration of the call.
+    pub fn tvm_emulator_set_prev_blocks_info(
+        tvm_emulator: *mut std::os::raw::c_void,
+        info_boc: *const std::os::raw::c_char,
+    ) -> bool;
+
     /**
      * @brief Set TVM gas limit
      * @param tvm_emulator Pointer to TVM emulator
@@ -112,6 +149,29 @@ extern "C" {
         gas_limit: i64,
     ) -> *const std::os::raw::c_char;
 
+    /// Runs the optimized get-method emulator and returns both the response and VM log.
+    ///
+    /// The returned opaque result owns both of its string fields and must be released with
+    /// [`run_method_detailed_result_destroy`].
+    ///
+    /// # Safety
+    ///
+    /// `params_boc` must point to a readable buffer of at least `len` bytes. The returned pointer
+    /// must not be used after it is destroyed.
+    pub fn tvm_emulator_emulate_run_method_detailed(
+        len: u32,
+        params_boc: *const std::os::raw::c_char,
+        gas_limit: i64,
+    ) -> *mut std::os::raw::c_void;
+
+    /// Destroys a detailed get-method result and its response and log fields.
+    ///
+    /// # Safety
+    ///
+    /// `detailed_result` must be a valid pointer returned by
+    /// [`tvm_emulator_emulate_run_method_detailed`] that has not already been destroyed.
+    pub fn run_method_detailed_result_destroy(detailed_result: *mut std::os::raw::c_void);
+
     /**
      * @brief Send external message
      * @param tvm_emulator Pointer to TVM emulator
@@ -173,6 +233,27 @@ extern "C" {
      * @param tvm_emulator Pointer to TVM emulator object
      */
     pub fn tvm_emulator_destroy(tvm_emulator: *mut std::os::raw::c_void);
+
+    /// Destroys a string allocated by the emulator library.
+    ///
+    /// Use this for strings returned by emulator functions unless their documentation specifies a
+    /// different owner. A null pointer is accepted.
+    ///
+    /// # Safety
+    ///
+    /// `string` must be null or a live pointer allocated and returned by the emulator library that
+    /// has not already been destroyed. It must not be used after this call.
+    pub fn string_destroy(string: *const std::os::raw::c_char);
+
+    /// Returns JSON containing the emulator library's commit hash and commit date.
+    ///
+    /// The returned string must be released with [`string_destroy`].
+    ///
+    /// # Safety
+    ///
+    /// The returned pointer must be checked for null before dereferencing and must not be used after
+    /// it is passed to [`string_destroy`].
+    pub fn emulator_version() -> *const std::os::raw::c_char;
 }
 
 #[cfg(test)]

@@ -16,6 +16,13 @@ extern "C" {
         request: *const std::os::raw::c_char,
     ) -> *const std::os::raw::c_char;
 
+    /// Cancels all outstanding requests for a tonlib JSON client.
+    ///
+    /// # Safety
+    ///
+    /// `client` must be a valid, live pointer returned by [`tonlib_client_json_create`].
+    pub fn tonlib_client_json_cancel_requests(client: *mut std::os::raw::c_void);
+
     pub fn tonlib_client_json_destroy(client: *mut std::os::raw::c_void);
 
     pub fn tonlib_client_set_verbosity_level(verbosity_level: u32);

@@ -11,6 +11,19 @@ extern "C" {
         vm_log_verbosity: u32,
     ) -> *mut std::os::raw::c_void;
 
+    /// Creates a reusable emulator configuration object from a base64-encoded BoC.
+    ///
+    /// Returns a null pointer if the configuration cannot be decoded. A non-null result must
+    /// eventually be passed to [`emulator_config_destroy`].
+    ///
+    /// # Safety
+    ///
+    /// `config_params_boc` must point to a valid, NUL-terminated C string for the duration of the
+    /// call.
+    pub fn emulator_config_create(
+        config_params_boc: *const std::os::raw::c_char,
+    ) -> *mut std::os::raw::c_void;
+
     /**
      * @brief Set unixtime for emulation
      * @param transaction_emulator Pointer to TransactionEmulator object
@@ -61,6 +74,19 @@ extern "C" {
     pub fn transaction_emulator_set_config(
         tx_emulator: *const std::os::raw::c_void,
         config_boc: *const std::os::raw::c_char,
+    ) -> bool;
+
+    /// Sets a previously created configuration object on a transaction emulator.
+    ///
+    /// The configuration remains caller-owned and must outlive the emulator's use of it.
+    ///
+    /// # Safety
+    ///
+    /// `tx_emulator` must be a valid, live transaction emulator pointer and `config` must be a
+    /// valid, live pointer returned by [`emulator_config_create`].
+    pub fn transaction_emulator_set_config_object(
+        tx_emulator: *mut std::os::raw::c_void,
+        config: *mut std::os::raw::c_void,
     ) -> bool;
 
     /**
@@ -156,6 +182,14 @@ extern "C" {
      * @param transaction_emulator Pointer to TransactionEmulator object
      */
     pub fn transaction_emulator_destroy(tx_emulator: *const std::os::raw::c_void);
+
+    /// Destroys an emulator configuration object.
+    ///
+    /// # Safety
+    ///
+    /// `config` must be a valid pointer returned by [`emulator_config_create`] that has not
+    /// already been destroyed, and no emulator may still use it.
+    pub fn emulator_config_destroy(config: *mut std::os::raw::c_void);
 }
 
 #[cfg(test)]
