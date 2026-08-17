@@ -12,7 +12,7 @@ use std::time::Duration;
 use std::{env, fs};
 
 const TON_MONOREPO_URL: &str = "https://github.com/ton-blockchain/ton";
-const TON_MONOREPO_REVISION: &str = "v2026.07";
+const TON_MONOREPO_REVISION: &str = "v2026.08";
 const TON_MONOREPO_DIR_ENV: &str = "TON_MONOREPO_DIR";
 
 #[cfg(feature = "with_debug_info")]
