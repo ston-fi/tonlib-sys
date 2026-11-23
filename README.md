@@ -1,7 +1,18 @@
 # Rust Bindings for tonlibjson Library
 
 This repository contains the Rust bindings for tonlib library (https://github.com/ton-blockchain/ton), allowing developers to use tonlib functionality in their Rust applications.
-Starting from version 2024.6.1, this project depends on a forked version of ton instead of the original  (https://github.com/ston-fi/ton). This change was made to address urgent fixes and potential future needs.
+The default source build in version 2026.11.0 uses the upstream [TON v2026.11 release](https://github.com/ton-blockchain/ton/releases/tag/v2026.11).
+
+## TON 2026.11 compatibility
+
+Crate versions track the upstream TON year and month. This update removes the upstream
+payment-channel JSON API, including `pchan.signPromise`, `pchan.validatePromise`,
+`pchan.packPromise`, `pchan.unpackPromise`, and `actionPchan`. Applications using these
+requests must remain on an older TON release or migrate before upgrading. The Rust
+FFI function signatures are unchanged. Use `~2026.10.0` to stay on the previous release;
+a requirement such as `"2026"` permits this update.
+
+With `shared-tonlib`, the linked system library determines the TON version.
 
 ## Features
 * Uses Cmake to build tonlibjson_static by default.
